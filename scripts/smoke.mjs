@@ -312,6 +312,56 @@ if (drift > driftLimit) {
   errors.push(`mobile: player kept moving after release (${drift.toFixed(1)}px > ${driftLimit.toFixed(1)}px)`);
 }
 
+// --- Sliding a thumb between the movement pads --------------------------
+// Regression guard. releaseButton() asks whether any *other* pointer still
+// holds the action, so the sliding pointer has to leave the map before the
+// release. When it didn't, a LEFT->RIGHT slide found itself, never lifted
+// 'left', and left both directions held: the character froze, then ran away
+// once the finger came up. Symptom on device was "left and right get confused
+// or get stuck".
+const slideBuffer = async (fromB, toB) => {
+  const [fx, fy] = await bufferToClient(fromB[0], fromB[1]);
+  const [tx, ty] = await bufferToClient(toB[0], toB[1]);
+  const cdp = await mobile.newCDPSession(mp);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: fx, y: fy, id: 1 }] });
+  await mp.waitForTimeout(250);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: tx, y: ty, id: 1 }] });
+  await mp.waitForTimeout(350);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.detach();
+};
+
+const LEFT_PAD = [34, 231];
+const RIGHT_PAD = [90, 231];
+await slideBuffer(LEFT_PAD, RIGHT_PAD);
+await mp.waitForTimeout(500);
+
+// The decisive check: with nothing held, RIGHT alone must move the player
+// right. A stuck 'left' cancels it out to exactly zero.
+const preRight = await mprobe(() => window.cyberTrash.playerX);
+await holdBuffer(RIGHT_PAD[0], RIGHT_PAD[1], 700);
+await mp.waitForTimeout(150);
+const postRight = await mprobe(() => window.cyberTrash.playerX);
+if (postRight - preRight < 20) {
+  errors.push(
+    `mobile: RIGHT is dead after sliding between pads (${(postRight - preRight).toFixed(1)}px) ` +
+    '- a direction is stuck down',
+  );
+}
+
+// The padded hit areas of the two pads overlap along their seam. First-match
+// handed that whole strip to LEFT, so the inner edge of RIGHT moved you left.
+// x=66 is visually inside RIGHT and inside LEFT's padding.
+const preSeam = await mprobe(() => window.cyberTrash.playerX);
+await holdBuffer(66, 231, 600);
+await mp.waitForTimeout(150);
+const postSeam = await mprobe(() => window.cyberTrash.playerX);
+if (postSeam - preSeam < 15) {
+  errors.push(
+    `mobile: the LEFT/RIGHT seam resolves to the wrong pad (${(postSeam - preSeam).toFixed(1)}px)`,
+  );
+}
+
 // Jump and attack.
 await tapBuffer(446, 226, 300);
 await tapBuffer(388, 210, 300);
