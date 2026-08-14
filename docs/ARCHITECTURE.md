@@ -166,6 +166,10 @@ alive.
 The test also guards frame rate (fails under 45 fps on desktop, 30 on mobile)
 and fails on any console error, page exception or failed request.
 
+All of it runs in CI on every push to `main` (`.github/workflows/pages.yml`),
+which then publishes `dist/` to GitHub Pages. Deployment is gated on the suite
+passing, so the live site is always a build that booted and played.
+
 ## Browser support
 
 The bundle targets **ES2019** and is checked against that by the smoke test.
@@ -188,6 +192,12 @@ Two guards keep it that way:
 
 Anything added at module scope should be assumed to run on the oldest phone
 someone will point at the dev server.
+
+One related trap, since it cost a round of debugging: the deployed site must be
+a *built* artifact. GitHub Pages was originally serving the repository root,
+which has `index.html` but no `bundle.js` — that only exists in `dist/`, which
+is gitignored. The page loaded, the script 404'd, and the boot screen sat there
+with a tap that did nothing. The Pages workflow now deploys `dist/`.
 
 ## Performance notes
 

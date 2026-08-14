@@ -1,0 +1,65 @@
+# Build the game and publish it to GitHub Pages.
+#
+# Pages was previously serving the repository root, which contains index.html
+# but not bundle.js — that only exists in dist/, which is gitignored. The site
+# loaded, the script 404'd, and the boot screen sat there doing nothing. This
+# builds the bundle on every push and publishes dist/ instead, so the deployed
+# site is a real build rather than a half of one.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; always finish the newest.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The smoke test drives a real browser, so it needs one.
+      - run: npx playwright install --with-deps chromium
+
+      # typecheck + build + the full smoke run, including the mobile pass.
+      # A broken build must not reach the deployed site.
+      - run: npm run check
+
+      - name: Upload smoke screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: scripts/.smoke/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

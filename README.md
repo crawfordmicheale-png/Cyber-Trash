@@ -8,10 +8,16 @@ This repository is a **playable vertical slice**: the whole loop runs end to end
 (settlement → climb → fight → scavenge → build → escape or die → upgrade →
 repeat), built on Layer 01, THE SCRAP.
 
+**Play it:** https://crawfordmicheale-png.github.io/Cyber-Trash/
+
 ```bash
 npm install
 npm run dev     # http://localhost:5173
 ```
+
+Every push to `main` builds the game and publishes it to GitHub Pages
+(`.github/workflows/pages.yml`). The workflow runs typecheck, build and the
+full smoke suite first, so a broken build never reaches the deployed site.
 
 ## Controls
 
@@ -37,8 +43,12 @@ system without grinding drops.
 
 ## Testing on your phone
 
-`npm run dev` binds to every interface and prints a LAN address alongside the
-local one:
+The quickest route is the deployed site — open
+https://crawfordmicheale-png.github.io/Cyber-Trash/ on the phone and hold it in
+landscape.
+
+To test uncommitted work instead, `npm run dev` binds to every interface and
+prints a LAN address alongside the local one:
 
 ```
   CYBER-TRASH
