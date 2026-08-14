@@ -13,6 +13,7 @@ import { particles } from '../fx/particles';
 import { clamp } from '../core/math';
 import { weaponSprite } from '../art/weapons';
 import { save } from '../core/save';
+import { touch } from './touch';
 
 /**
  * The workbench.
@@ -260,8 +261,7 @@ export class Workbench {
     }
 
     // --- controls
-    drawText(g, 'ARROWS MOVE   ENTER FIT   TAB CLOSE', VIEW_W / 2, VIEW_H - 10, {
-      color: PAL.metal, align: 'center',
-    });
+    drawText(g, touch.enabled ? 'D-PAD MOVE   OK FIT   BACK CLOSE' : 'ARROWS MOVE   ENTER FIT   TAB CLOSE',
+      VIEW_W / 2, VIEW_H - 10, { color: PAL.metal, align: 'center' });
   }
 }

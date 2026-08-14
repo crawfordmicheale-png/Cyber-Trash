@@ -60,11 +60,22 @@ character-map rows and compiled once at boot into three canvases:
 Baking the glow at load time means neon costs one extra blit per draw instead of
 a per-frame blur — which matters because nearly everything in this game glows.
 
-**`renderer.ts`** — draws into a 480×270 buffer, then upscales by an integer
-factor (letterboxing the remainder) so pixels stay square. `drawSprite` is the
-single call that replaces frame animation: scale for squash/stretch, rotation
-for lean and swings, flash for impacts. The CRT pass (scanlines, vignette,
-chromatic aberration, glitch bands, screen flash) runs at composite time.
+**`renderer.ts`** — draws into a 480×270 buffer, then upscales to fit the
+window. `drawSprite` is the single call that replaces frame animation: scale for
+squash/stretch, rotation for lean and swings, flash for impacts. The CRT pass
+(scanlines, vignette, chromatic aberration, glitch bands, screen flash) runs at
+composite time.
+
+Scaling has two modes. At 2x or more the scale is floored to an integer, which
+keeps every pixel square. Below that it stays fractional — a phone in landscape
+lands near 1.4x, and flooring it to 1x would shrink the game to a stamp in the
+middle of the screen. Filling the screen wins there. The backing store is sized
+to `cssScale × devicePixelRatio` (capped at 2) so phones render at device
+resolution instead of having the compositor blur an undersized canvas.
+
+There is also an **overlay** canvas, composited last at 1:1 with no zoom and no
+shake. Touch controls live there: a button that moves with the camera is a
+button you miss.
 
 **`text.ts`** — a 5×7 pixel font defined inline as binary row strings, compiled
 into a white atlas and tinted per colour on demand.
@@ -118,6 +129,16 @@ caused the damage. Entities outside a 2.2-screen box are skipped.
 **`workbench.ts`** — the build UI. Part lists are in canonical data-table order,
 deliberately *not* equipped-first (see below).
 
+**`touch.ts`** — on-screen controls. Two layouts (gameplay and menu) plus one
+contextual button that appears only when there is something to interact with.
+Every press routes through `input.virtualDown/Up`, which is the same state the
+keyboard writes to, so buffering, `take()` semantics and blur handling all come
+for free and no gameplay code has a touch branch in it. Pointer events are
+tracked per `pointerId`, so multi-touch works and sliding a thumb from one pad
+to another hands the action over cleanly. Move and release are bound to the
+window rather than the canvas — a thumb that slides off the edge still has to
+let go of the button, or the player runs into a pit forever.
+
 ## Testing
 
 `scripts/smoke.mjs` drives a real Chromium through the entire loop and asserts
@@ -135,8 +156,15 @@ on live state exposed at `window.cyberTrash`. It found two real bugs:
    crowd. Fixed with an `allowSecondary` flag on `hit` plus a re-entry guard on
    `explode`.
 
-The test also guards frame rate (fails under 45 fps) and fails on any console
-error, page exception or failed request.
+A second pass then repeats the critical path in a 844×390 viewport with touch
+emulation: it checks the controls auto-enable, the canvas scales up to the
+device's resolution, taps navigate the menus, holding the movement pad actually
+moves the player, releasing actually stops them (the classic stuck-virtual-key
+bug), the contextual button works, and rotating to portrait keeps everything
+alive.
+
+The test also guards frame rate (fails under 45 fps on desktop, 30 on mobile)
+and fails on any console error, page exception or failed request.
 
 ## Performance notes
 

@@ -27,14 +27,36 @@ npm run dev     # http://localhost:5173
 | Ascend at the exit | `E` |
 | Menus | Arrows + `Enter`, `Esc` to back out |
 
+On a phone or tablet, on-screen controls appear automatically: a movement pad
+under the left thumb, action buttons under the right, and a contextual button
+that only shows up when there is something to interact with. Menus get a d-pad
+plus OK/BACK. Add `?touch=1` to force the same layout on a desktop.
+
 `?kit=1` in the URL hands over one of every component, for poking at the build
 system without grinding drops.
+
+## Testing on your phone
+
+`npm run dev` binds to every interface and prints a LAN address alongside the
+local one:
+
+```
+  CYBER-TRASH
+    local    http://localhost:5173
+    network  http://192.168.1.24:5173   <- open this on your phone
+```
+
+Open the network URL on a device on the same Wi-Fi and hold it in landscape —
+portrait shows a rotate prompt. On iOS, "Add to Home Screen" launches it without
+browser chrome, which is the only reliable way to get fullscreen there.
 
 ## What's here
 
 **Movement** — the first pillar. Run acceleration and friction, variable-height
 jumps, coyote time, input buffering on every action, a flat i-frame dash with
-afterimages, wall slide and wall jump, one-way catwalks.
+afterimages, wall slide and wall jump, one-way catwalks. Keyboard, mouse and
+touch all feed the same buffered input state, so nothing downstream knows or
+cares which one you used.
 
 **Combat** — seven attack archetypes (swing, thrust, spin, single shot, burst,
 lob, hitscan beam), each with its own weapon-motion curve. Hits land with
@@ -100,11 +122,13 @@ replacing the rows. See [docs/ASSET_PIPELINE.md](docs/ASSET_PIPELINE.md).
 | `npm run check` | typecheck + build + smoke |
 
 The smoke test drives a real browser through title → settlement → run →
-workbench → combat → sector transition → extraction → death, asserts on live sim
-state, and fails on any console error or page exception. It needs a Chromium
-binary; set `CHROMIUM_PATH` if `playwright install chromium` put it somewhere
-non-default. It caught two real bugs
-during development (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#testing)).
+workbench → combat → sector transition → extraction → death, then repeats the
+critical path in a phone-sized viewport with touch emulation — asserting that
+taps actually move the player and that releasing actually stops them. It fails
+on any console error or page exception. It needs a Chromium binary; set
+`CHROMIUM_PATH` if `playwright install chromium` put it somewhere non-default.
+It caught two real bugs during development (see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#testing)).
 
 ## Documentation
 

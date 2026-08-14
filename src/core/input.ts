@@ -61,6 +61,31 @@ export class Input {
   /** True once the player has actually touched a control. */
   anyInputSeen = false;
 
+  /**
+   * Set while on-screen touch controls are visible. Raw mouse clicks then stop
+   * mapping to attack/throw, so tapping a button doesn't also swing the weapon.
+   * Touch devices never produce mouse events, so this only matters when the
+   * touch layout is forced on a desktop for testing.
+   */
+  suppressMouse = false;
+
+  /**
+   * Press a virtual button. Routed through exactly the same state as a key, so
+   * touch input inherits the buffering, `take()` semantics and blur handling
+   * for free — nothing downstream can tell the difference.
+   */
+  virtualDown(action: Action): void {
+    if (this.down.has(action)) return;
+    this.anyInputSeen = true;
+    this.down.add(action);
+    this.pressedAt.set(action, this.now);
+    this.consumed.delete(action);
+  }
+
+  virtualUp(action: Action): void {
+    this.down.delete(action);
+  }
+
   attach(target: HTMLElement | Window = window): void {
     window.addEventListener('keydown', (e) => {
       const actions = KEY_MAP[e.code];
@@ -87,6 +112,7 @@ export class Input {
     window.addEventListener('blur', () => this.releaseAll());
 
     target.addEventListener('mousedown', (e) => {
+      if (this.suppressMouse) return;
       const btn = (e as MouseEvent).button;
       this.anyInputSeen = true;
       this.pointerDown = true;
@@ -96,6 +122,7 @@ export class Input {
       this.consumed.delete(action);
     });
     target.addEventListener('mouseup', (e) => {
+      if (this.suppressMouse) return;
       const btn = (e as MouseEvent).button;
       this.pointerDown = false;
       this.down.delete(btn === 2 ? 'throw' : 'attack');
