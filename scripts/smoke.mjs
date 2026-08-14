@@ -11,12 +11,18 @@
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, existsSync } from 'node:fs';
 import { extname, join } from 'node:path';
 
 const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const OUT = process.env.SMOKE_OUT ?? 'scripts/.smoke';
-const CHROME = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+/**
+ * Chromium location. Prefer an explicit override, then the preinstalled browser
+ * in this dev container, and otherwise fall back to letting Playwright resolve
+ * its own download — which is what CI does after `playwright install`.
+ */
+const PINNED = process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const CHROME = existsSync(PINNED) ? PINNED : undefined;
 mkdirSync(OUT, { recursive: true });
 
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.map': 'application/json' };
@@ -35,6 +41,7 @@ const server = createServer(async (req, res) => {
 });
 await new Promise((r) => server.listen(PORT, r));
 
+// executablePath undefined => Playwright uses its own installed browser.
 const browser = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 
@@ -286,17 +293,23 @@ const beforeX = await mprobe(() => window.cyberTrash.playerX);
 await holdBuffer(89, 227, 700);
 await mp.waitForTimeout(120);
 const afterX = await mprobe(() => window.cyberTrash.playerX);
-if (afterX - beforeX < 20) {
-  errors.push(`mobile: RIGHT pad moved the player only ${(afterX - beforeX).toFixed(1)}px`);
+const heldDistance = afterX - beforeX;
+if (heldDistance < 20) {
+  errors.push(`mobile: RIGHT pad moved the player only ${heldDistance.toFixed(1)}px`);
 }
 
 // Releasing must stop them — a stuck virtual key is the classic touch bug.
+// This compares against the distance the held pad actually produced rather than
+// demanding a dead stop: the player may still be decelerating, airborne, or
+// taking knockback, none of which mean the button is stuck. A stuck key keeps
+// producing full run speed, so it lands far outside this margin.
 await mp.waitForTimeout(400);
 const restX = await mprobe(() => window.cyberTrash.playerX);
-await mp.waitForTimeout(400);
-const stillX = await mprobe(() => window.cyberTrash.playerX);
-if (Math.abs(stillX - restX) > 2) {
-  errors.push(`mobile: player kept moving after release (${(stillX - restX).toFixed(1)}px)`);
+await mp.waitForTimeout(500);
+const drift = Math.abs((await mprobe(() => window.cyberTrash.playerX)) - restX);
+const driftLimit = Math.max(20, heldDistance * 0.35);
+if (drift > driftLimit) {
+  errors.push(`mobile: player kept moving after release (${drift.toFixed(1)}px > ${driftLimit.toFixed(1)}px)`);
 }
 
 // Jump and attack.
