@@ -1,0 +1,19 @@
+{
+  "name": "cyber-trash",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Neon pixel-art action-platformer roguelite set inside a civilization-sized garbage megastructure.",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/build.mjs --watch --serve",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build && npm run smoke",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.62.1",
+    "typescript": "^5.9.3"
+  }
+}
