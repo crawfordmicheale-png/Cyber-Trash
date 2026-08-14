@@ -34,6 +34,9 @@ interface Button {
 const rect = (x: number, y: number, w: number, h: number): Shape => ({ kind: 'rect', x, y, w, h });
 const disc = (x: number, y: number, r: number): Shape => ({ kind: 'disc', x, y, r });
 
+const centreOf = (s: Shape): [number, number] =>
+  s.kind === 'rect' ? [s.x + s.w / 2, s.y + s.h / 2] : [s.x, s.y];
+
 /**
  * Gameplay layout, landscape. Movement under the left thumb, actions under the
  * right, nothing in the middle third where the character and the fight are.
@@ -82,7 +85,6 @@ export class TouchControls {
   private renderer!: Renderer;
   /** pointerId -> button id currently held by that pointer. */
   private held = new Map<number, string>();
-  private pressed = new Set<string>();
   private point = { x: 0, y: 0 };
   /** Buttons flash briefly after release so a tap still reads as a tap. */
   private releasedAt = new Map<string, number>();
@@ -124,6 +126,11 @@ export class TouchControls {
     window.addEventListener('pointerup', release);
     window.addEventListener('pointercancel', release);
     window.addEventListener('blur', () => this.releaseAll());
+    // Backgrounding the tab can swallow the pointerup entirely, which would
+    // otherwise leave a direction held down for the rest of the run.
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) this.releaseAll();
+    });
   }
 
   /** Touch-event equivalent of the pointer-event path, for browsers without it. */
@@ -161,14 +168,40 @@ export class TouchControls {
     return [];
   }
 
+  /**
+   * Which button is under this point?
+   *
+   * Buttons are padded outward so near-misses still count, which means adjacent
+   * pads overlap along their shared seam. Returning the first match there would
+   * hand the whole seam to whichever button happens to be first in the array —
+   * pressing the inner edge of RIGHT gave you LEFT. Ties go to the nearest
+   * centre instead, so the seam splits where it looks like it splits.
+   */
   private hitTest(bx: number, by: number): string | null {
-    for (const b of this.buttons()) {
-      if (this.inside(b.shape, b.pad, bx, by)) return b.id;
+    let best: string | null = null;
+    let bestDist = Infinity;
+
+    const consider = (id: string, shape: Shape, pad: number): void => {
+      if (!this.inside(shape, pad, bx, by)) return;
+      const [cx, cy] = centreOf(shape);
+      const d = (bx - cx) * (bx - cx) + (by - cy) * (by - cy);
+      if (d < bestDist) {
+        bestDist = d;
+        best = id;
+      }
+    };
+
+    for (const b of this.buttons()) consider(b.id, b.shape, b.pad);
+    if (this.mode === 'gameplay' && this.contextAction) {
+      consider('context', CONTEXT_SHAPE, 10);
     }
-    if (this.mode === 'gameplay' && this.contextAction && this.inside(CONTEXT_SHAPE, 10, bx, by)) {
-      return 'context';
-    }
-    return null;
+    return best;
+  }
+
+  /** Is any finger currently on this button? */
+  private isPressed(id: string): boolean {
+    for (const held of this.held.values()) if (held === id) return true;
+    return false;
   }
 
   private inside(s: Shape, pad: number, bx: number, by: number): boolean {
@@ -187,6 +220,9 @@ export class TouchControls {
   }
 
   private onDown(pointerId: number, clientX: number, clientY: number): void {
+    // A fresh press on a pointer we still believe is down means we missed its
+    // release; drop the stale claim rather than stacking a second one.
+    if (this.held.has(pointerId)) this.onUp(pointerId);
     this.renderer.toBufferPoint(clientX, clientY, this.point);
     const id = this.hitTest(this.point.x, this.point.y);
     if (!id) {
@@ -203,19 +239,26 @@ export class TouchControls {
     const current = this.held.get(pointerId);
     if (current === undefined) return;
     this.renderer.toBufferPoint(clientX, clientY, this.point);
-    const id = this.hitTest(this.point.x, this.point.y);
-    if (id === current || (id === null && current === '')) return;
+    const next = this.hitTest(this.point.x, this.point.y) ?? '';
+    if (next === current) return;
+
     // Sliding from one pad to another swaps cleanly, which is how thumbs
     // actually move between left and right on a d-pad.
-    this.releaseButton(current);
+    //
+    // Order matters: this pointer's claim has to leave the map BEFORE the
+    // release, because releaseButton asks whether any *other* pointer still
+    // holds the action. Releasing first meant it found this very pointer,
+    // concluded the button was still held, and never lifted the key — so a
+    // slide from LEFT to RIGHT left both directions down (the character froze)
+    // and, on lift, left the first one down forever (the character ran away).
     this.held.delete(pointerId);
-    if (id) this.press(pointerId, id);
+    this.releaseButton(current);
+    if (next) this.press(pointerId, next);
     else this.held.set(pointerId, '');
   }
 
   private press(pointerId: number, id: string): void {
     this.held.set(pointerId, id);
-    this.pressed.add(id);
     const action = this.actionFor(id);
     if (action) input.virtualDown(action);
   }
@@ -231,12 +274,15 @@ export class TouchControls {
     this.releaseButton(id);
   }
 
+  /**
+   * Lift a button's action, unless some other finger still wants it.
+   *
+   * The caller must already have removed this pointer from `held`.
+   */
   private releaseButton(id: string): void {
     if (id === '') return;
-    this.pressed.delete(id);
     this.releasedAt.set(id, time.elapsed);
     const action = this.actionFor(id);
-    // Only lift the action if no other finger is still on a button using it.
     if (!action) return;
     for (const otherId of this.held.values()) {
       if (otherId && this.actionFor(otherId) === action) return;
@@ -250,7 +296,6 @@ export class TouchControls {
       if (action) input.virtualUp(action);
     }
     this.held.clear();
-    this.pressed.clear();
   }
 
   /** Called when the game switches screens, so stale holds don't leak across. */
@@ -267,7 +312,7 @@ export class TouchControls {
     const g = r.ov;
     r.overlayActive = true;
 
-    for (const b of this.buttons()) this.drawButton(g, b, this.pressed.has(b.id));
+    for (const b of this.buttons()) this.drawButton(g, b, this.isPressed(b.id));
 
     if (this.mode === 'gameplay' && this.contextAction) {
       this.drawButton(g, {
@@ -277,7 +322,7 @@ export class TouchControls {
         color: PAL.lime,
         shape: CONTEXT_SHAPE,
         pad: 10,
-      }, this.pressed.has('context'));
+      }, this.isPressed('context'));
     }
 
     if (r.portrait) this.drawRotateHint(g);

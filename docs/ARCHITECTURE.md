@@ -139,6 +139,21 @@ to another hands the action over cleanly. Move and release are bound to the
 window rather than the canvas — a thumb that slides off the edge still has to
 let go of the button, or the player runs into a pit forever.
 
+Two invariants in here are easy to break and were both bugs:
+
+- **`releaseButton` requires the caller to have already removed the pointer
+  from `held`.** It decides whether to lift the key by asking if any *other*
+  pointer still holds that action; if the departing pointer is still in the
+  map, it finds itself, concludes the button is still held, and never lifts.
+  That left both directions down after a left-to-right slide.
+- **Hit testing resolves overlaps by nearest centre, not first match.** Targets
+  are padded outward so near-misses count, which makes adjacent pads overlap
+  along their seam. First-match handed that whole strip to whichever button
+  came first in the array.
+
+Both are covered by assertions in the mobile pass, and both were checked by
+reintroducing the bug and confirming the suite goes red.
+
 ## Testing
 
 `scripts/smoke.mjs` drives a real Chromium through the entire loop and asserts
