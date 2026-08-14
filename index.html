@@ -111,11 +111,20 @@
       boot.querySelector('.fix').textContent = fix;
     }
 
+    // Advice only helps if it matches where the page is actually running.
+    // "Run npm run build" is useless to someone on a phone looking at a
+    // deployed site.
+    var host = location.hostname;
+    var isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+      host === '' || location.protocol === 'file:';
+
     // Capture phase catches resource load failures (a missing bundle.js) as
     // well as ordinary script errors.
     window.addEventListener('error', function (e) {
       if (e.target && e.target !== window && e.target.tagName === 'SCRIPT') {
-        report('bundle.js failed to load', 'Run "npm run build" (or "npm run dev") and reload.');
+        report('bundle.js failed to load', isLocal
+          ? 'Run "npm run build" (or "npm run dev") and reload.'
+          : 'This deployment is missing its build. It is serving the source folder instead of dist/.');
         return;
       }
       var msg = (e.error && e.error.message) || e.message || 'script error';
