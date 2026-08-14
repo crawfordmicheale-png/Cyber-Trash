@@ -96,6 +96,13 @@ export class TouchControls {
     if (new URLSearchParams(location.search).has('touch')) this.enable();
     else if (window.matchMedia?.('(pointer: coarse)').matches) this.enable();
 
+    if (!('PointerEvent' in window)) {
+      // Older mobile browsers (and some embedded WebViews) never got pointer
+      // events. Fall back to raw touch so the controls still work there.
+      this.attachTouchFallback(canvas);
+      return;
+    }
+
     canvas.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'touch') this.enable();
       if (!this.enabled) return;
@@ -117,6 +124,29 @@ export class TouchControls {
     window.addEventListener('pointerup', release);
     window.addEventListener('pointercancel', release);
     window.addEventListener('blur', () => this.releaseAll());
+  }
+
+  /** Touch-event equivalent of the pointer-event path, for browsers without it. */
+  private attachTouchFallback(canvas: HTMLCanvasElement): void {
+    const handle = (e: TouchEvent, phase: 'down' | 'move' | 'up'): void => {
+      this.enable();
+      e.preventDefault();
+      if (phase === 'up') {
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          this.onUp(e.changedTouches[i].identifier);
+        }
+        return;
+      }
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (phase === 'down') this.onDown(t.identifier, t.clientX, t.clientY);
+        else this.onMove(t.identifier, t.clientX, t.clientY);
+      }
+    };
+    canvas.addEventListener('touchstart', (e) => handle(e, 'down'), { passive: false });
+    window.addEventListener('touchmove', (e) => handle(e, 'move'), { passive: false });
+    window.addEventListener('touchend', (e) => handle(e, 'up'), { passive: false });
+    window.addEventListener('touchcancel', (e) => handle(e, 'up'), { passive: false });
   }
 
   enable(): void {

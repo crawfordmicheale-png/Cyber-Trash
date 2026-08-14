@@ -166,6 +166,29 @@ alive.
 The test also guards frame rate (fails under 45 fps on desktop, 30 on mobile)
 and fails on any console error, page exception or failed request.
 
+## Browser support
+
+The bundle targets **ES2019** and is checked against that by the smoke test.
+This is not conservatism for its own sake: a syntax feature the browser cannot
+parse fails the *entire* bundle before a single line runs, and the symptom is
+a boot screen that looks fine and does nothing when tapped. The same rule
+applies to runtime APIs used at module-evaluation time — `structuredClone` in
+the save store was exactly this bug, and cost every phone older than Safari
+15.4 the whole game.
+
+Two guards keep it that way:
+
+- `scripts/smoke.mjs` parses the built bundle as ES2019 and fails on
+  `structuredClone`.
+- `index.html` carries a plain-ES5 **boot watchdog**, outside the bundle, that
+  catches load failures, script errors and unhandled rejections and prints them
+  on the boot screen — plus a timeout that speaks up if the bundle never
+  signals `window.__cyberTrashReady`. A `<script nomodule>` covers browsers with
+  no ES-module support at all.
+
+Anything added at module scope should be assumed to run on the oldest phone
+someone will point at the dev server.
+
 ## Performance notes
 
 - Glow is pre-blurred per sprite, never per frame.

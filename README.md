@@ -50,6 +50,12 @@ Open the network URL on a device on the same Wi-Fi and hold it in landscape —
 portrait shows a rotate prompt. On iOS, "Add to Home Screen" launches it without
 browser chrome, which is the only reliable way to get fullscreen there.
 
+If the boot screen ever sits there doing nothing, it will now say why instead:
+a watchdog outside the bundle reports a missing `bundle.js`, a script error, or
+a browser too old to run the code. The boot screen also shows a short build
+stamp, and the bundle URL is cache-busted on every build, so you can tell at a
+glance whether the phone is actually running the latest code.
+
 ## What's here
 
 **Movement** — the first pillar. Run acceleration and friction, variable-height
