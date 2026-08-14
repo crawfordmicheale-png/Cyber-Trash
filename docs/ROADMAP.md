@@ -52,7 +52,7 @@ non-combat level type, dialogue, and shop inventory persistence.
 ### Other gaps
 
 - **Music.** SFX are fully procedural; there is no soundtrack.
-- **Gamepad and touch.** Keyboard and mouse only.
+- **Gamepad.** Keyboard, mouse and touch are supported; gamepad is not.
 - **Consumables and mutations.** The bible lists both as run-scoped rewards;
   neither exists. Mods cover some of that ground.
 - **Extraction risk.** Currently extracting is strictly better than dying. The

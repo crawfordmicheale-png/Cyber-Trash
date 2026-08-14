@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- user-scalable=no stops double-tap zoom mid-fight; viewport-fit=cover fills
+     the notch area on phones. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05050a">
+<!-- "Add to Home Screen" then launches without browser chrome, which is the
+     only reliable way to get fullscreen on iOS. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CYBER-TRASH">
 <title>CYBER-TRASH</title>
 <style>
   :root { color-scheme: dark; }
@@ -12,6 +21,13 @@
     background: #05050a;
     font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     color: #6a6a80;
+    /* No scrolling, no pull-to-refresh, no rubber-banding, no tap flash. */
+    position: fixed; inset: 0;
+    touch-action: none;
+    overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
   #stage {
     position: fixed; inset: 0;
@@ -31,11 +47,20 @@
     position: fixed; inset: 0; display: grid; place-items: center;
     background: #05050a; z-index: 10; cursor: pointer;
     text-align: center; letter-spacing: 0.18em; font-size: 13px;
+    padding: 16px;
+    touch-action: manipulation;
   }
   #boot b { display: block; font-size: 30px; letter-spacing: 0.24em; margin-bottom: 14px;
     color: #ff2d95; text-shadow: 0 0 18px rgba(255,45,149,.75), 2px 2px 0 #00f0ff; }
   #boot span { color: #b6ff2e; }
   #boot small { display:block; margin-top: 22px; color:#4a4a5e; letter-spacing:.1em; line-height:1.9; }
+  /* Swap the control hints depending on what the device actually has. */
+  .touch-only { display: none; }
+  @media (pointer: coarse) {
+    .touch-only { display: block; }
+    .keys-only { display: none; }
+    #boot b { font-size: 24px; }
+  }
 </style>
 </head>
 <body>
@@ -43,10 +68,15 @@
   <div id="boot">
     <div>
       <b>CYBER-TRASH</b>
-      <span>[ CLICK TO DESCEND ]</span>
-      <small>
+      <span class="keys-only">[ CLICK TO DESCEND ]</span>
+      <span class="touch-only">[ TAP TO DESCEND ]</span>
+      <small class="keys-only">
         MOVE &nbsp;A / D &nbsp;&nbsp;·&nbsp;&nbsp; JUMP &nbsp;SPACE &nbsp;&nbsp;·&nbsp;&nbsp; DASH &nbsp;SHIFT<br>
         ATTACK &nbsp;J / LMB &nbsp;&nbsp;·&nbsp;&nbsp; THROW &nbsp;K &nbsp;&nbsp;·&nbsp;&nbsp; WORKBENCH &nbsp;TAB
+      </small>
+      <small class="touch-only">
+        HOLD YOUR PHONE IN LANDSCAPE<br>
+        ON-SCREEN CONTROLS APPEAR ONCE YOU START
       </small>
     </div>
   </div>

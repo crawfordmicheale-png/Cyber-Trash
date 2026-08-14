@@ -16,6 +16,7 @@ import { fx } from './fx/fx';
 import { prop } from './art/props';
 import { ALL_PARTS } from './game/parts.data';
 import type { Player } from './game/player';
+import { touch } from './game/touch';
 
 type Screen = 'title' | 'settlement' | 'run' | 'dead' | 'extracted';
 
@@ -54,6 +55,7 @@ class Game {
       render: () => this.render(),
     });
     input.attach(this.renderer.canvas);
+    touch.attach(this.renderer);
     save.load();
   }
 
@@ -77,6 +79,10 @@ class Game {
         get workbenchOpen() { return gameInstance?.workbench.open ?? false; },
         get nearWorkbench() { return gameInstance?.world?.nearWorkbench ?? false; },
         get fps() { return gameInstance?.loop.fps ?? 0; },
+        get touchEnabled() { return touch.enabled; },
+        get touchMode() { return touch.mode; },
+        get playerX() { return gameInstance?.world?.player.x ?? 0; },
+        get playerY() { return gameInstance?.world?.player.y ?? 0; },
         /**
          * Mutating test hooks, only wired up under ?kit=1. They exist so the
          * smoke test can reach the run-ending screens without having to
@@ -331,7 +337,7 @@ class Game {
         const world = this.world;
         if (world) {
           world.draw();
-          drawHud(r, world);
+          drawHud(r, world, touch.enabled);
           this.workbench.draw(r, world.player);
         }
         break;
@@ -348,8 +354,47 @@ class Game {
       }
     }
 
+    r.clearOverlay();
+    this.syncTouchControls();
+    touch.draw(r);
+
     r.present();
     r.decay(1 / 60);
+  }
+
+  /**
+   * Point the touch layout at whatever the current screen needs, and surface the
+   * one contextual action that would otherwise be a hidden keyboard shortcut.
+   */
+  private syncTouchControls(): void {
+    if (!touch.enabled) return;
+
+    if (this.screen === 'run' && !this.workbench.open) {
+      touch.setMode('gameplay');
+      touch.tapAnywhereConfirm = false;
+      const world = this.world;
+      if (world?.exitReached) {
+        touch.contextAction = 'interact';
+        touch.contextLabel = 'UP';
+      } else if (world?.nearWorkbench) {
+        touch.contextAction = 'workbench';
+        touch.contextLabel = 'BUILD';
+      } else {
+        touch.contextAction = null;
+      }
+      return;
+    }
+
+    touch.contextAction = null;
+    if (this.screen === 'run' || this.screen === 'settlement') {
+      // Workbench and settlement are list menus: d-pad plus confirm.
+      touch.setMode('menu');
+      touch.tapAnywhereConfirm = false;
+    } else {
+      // Title and the run summary have a single action, so the whole screen is it.
+      touch.setMode('menu');
+      touch.tapAnywhereConfirm = true;
+    }
   }
 
   private drawBackdrop(): void {
@@ -441,7 +486,8 @@ class Game {
     if (!owned) {
       drawText(g, `LOCKED - ${chosen.unlockCost} SCRAP`, charX, 160, { color: PAL.orange, align: 'center' });
     }
-    drawText(g, '< >', charX, 168, { color: PAL.metal, align: 'center' });
+    // On touch the on-screen arrows say this already, and the d-pad sits here.
+    if (!touch.enabled) drawText(g, '< >', charX, 168, { color: PAL.metal, align: 'center' });
 
     // --- upgrades
     const options = this.settlementOptions();
@@ -488,9 +534,8 @@ class Game {
     drawText(g, `BLUEPRINTS KNOWN ${known}/${ALL_PARTS.length}`, VIEW_W / 2, VIEW_H - 22, {
       color: PAL.metalHi, align: 'center',
     });
-    drawText(g, 'ARROWS MOVE   ENTER SELECT', VIEW_W / 2, VIEW_H - 10, {
-      color: PAL.metal, align: 'center',
-    });
+    drawText(g, touch.enabled ? 'D-PAD MOVE   OK SELECT' : 'ARROWS MOVE   ENTER SELECT',
+      VIEW_W / 2, VIEW_H - 10, { color: PAL.metal, align: 'center' });
   }
 
   private drawSummary(): void {

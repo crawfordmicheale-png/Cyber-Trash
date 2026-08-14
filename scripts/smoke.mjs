@@ -188,6 +188,147 @@ const stats = await probe(() => ({
 }));
 if (stats.fps < 45) errors.push(`fps too low: ${stats.fps}`);
 
+// ---------------------------------------------------------------------------
+// Mobile pass: a phone-sized landscape viewport with real touch emulation.
+// ---------------------------------------------------------------------------
+const mobile = await browser.newContext({
+  viewport: { width: 844, height: 390 },
+  deviceScaleFactor: 3,
+  isMobile: true,
+  hasTouch: true,
+});
+const mp = await mobile.newPage();
+mp.on('pageerror', (e) => errors.push(`mobile pageerror: ${e.message}\n${e.stack ?? ''}`));
+mp.on('console', (m) => {
+  const t = m.text();
+  if (m.type() === 'error' && !ignorable(t) && !t.includes(GENERIC)) errors.push(`mobile console: ${t}`);
+});
+
+const mshot = (name) => mp.screenshot({ path: join(OUT, `${name}.png`) });
+const mprobe = (fn) => mp.evaluate(fn);
+/** Tap a point given in 480x270 buffer coordinates. */
+const bufferToClient = async (bx, by) => mp.evaluate(([x, y]) => {
+  const c = document.querySelector('canvas');
+  const r = c.getBoundingClientRect();
+  return [r.left + (x / 480) * r.width, r.top + (y / 270) * r.height];
+}, [bx, by]);
+const tapBuffer = async (bx, by, ms = 150) => {
+  const [cx, cy] = await bufferToClient(bx, by);
+  await mp.touchscreen.tap(cx, cy);
+  await mp.waitForTimeout(ms);
+};
+/** Press and hold a buffer-space point, using raw CDP touch events. */
+const holdBuffer = async (bx, by, ms) => {
+  const [cx, cy] = await bufferToClient(bx, by);
+  const cdp = await mobile.newCDPSession(mp);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: cx, y: cy, id: 1 }],
+  });
+  await mp.waitForTimeout(ms);
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await cdp.detach();
+};
+
+await mp.goto(`http://localhost:${PORT}/?kit=1`);
+await mp.waitForTimeout(400);
+await mp.tap('#boot');
+await mp.waitForTimeout(800);
+await mshot('13-mobile-title');
+
+if (!(await mprobe(() => window.cyberTrash.touchEnabled))) {
+  errors.push('touch controls did not enable on a touch device');
+}
+
+// The canvas must scale up to fill the phone screen rather than sitting at 1x
+// in the middle of it. The game is a fixed 16:9, so on a taller-or-wider phone
+// one axis is bound and the other is legitimately letterboxed — assert on the
+// bound axis, and that the backing store is at device resolution.
+const fit = await mprobe(() => {
+  const c = document.querySelector('canvas');
+  const r = c.getBoundingClientRect();
+  return {
+    w: r.width, h: r.height,
+    vw: window.innerWidth, vh: window.innerHeight,
+    backingW: c.width, dpr: window.devicePixelRatio,
+  };
+});
+const fillRatio = Math.max(fit.w / fit.vw, fit.h / fit.vh);
+if (fillRatio < 0.98) {
+  errors.push(`canvas fills only ${(fillRatio * 100).toFixed(0)}% of its bound axis`);
+}
+// Backing store must track the device pixel ratio, up to the renderer's cap.
+const wantDpr = Math.min(fit.dpr, 2);
+if (fit.backingW < fit.w * wantDpr - 1) {
+  errors.push(`canvas backing store below ${wantDpr}x (${fit.backingW} < ${fit.w * wantDpr})`);
+}
+
+// Title -> settlement: the whole screen is the button here.
+await tapBuffer(240, 120, 500);
+if ((await mprobe(() => window.cyberTrash.screen)) !== 'settlement') {
+  errors.push('mobile: tap-anywhere did not leave the title');
+}
+await mshot('14-mobile-settlement');
+
+// Settlement: d-pad down to DESCEND, then OK.
+for (let i = 0; i < 4; i++) await tapBuffer(62, 250, 160);
+await tapBuffer(438, 218, 900);
+if ((await mprobe(() => window.cyberTrash.screen)) !== 'run') {
+  errors.push('mobile: could not start a run from the touch menu');
+}
+if ((await mprobe(() => window.cyberTrash.touchMode)) !== 'gameplay') {
+  errors.push('mobile: touch layout did not switch to gameplay');
+}
+await mshot('15-mobile-run');
+
+// Holding the RIGHT pad must actually move the player.
+const beforeX = await mprobe(() => window.cyberTrash.playerX);
+await holdBuffer(89, 227, 700);
+await mp.waitForTimeout(120);
+const afterX = await mprobe(() => window.cyberTrash.playerX);
+if (afterX - beforeX < 20) {
+  errors.push(`mobile: RIGHT pad moved the player only ${(afterX - beforeX).toFixed(1)}px`);
+}
+
+// Releasing must stop them — a stuck virtual key is the classic touch bug.
+await mp.waitForTimeout(400);
+const restX = await mprobe(() => window.cyberTrash.playerX);
+await mp.waitForTimeout(400);
+const stillX = await mprobe(() => window.cyberTrash.playerX);
+if (Math.abs(stillX - restX) > 2) {
+  errors.push(`mobile: player kept moving after release (${(stillX - restX).toFixed(1)}px)`);
+}
+
+// Jump and attack.
+await tapBuffer(446, 226, 300);
+await tapBuffer(388, 210, 300);
+await mshot('16-mobile-combat');
+
+// The contextual button only exists when there is something to interact with.
+await mp.evaluate(() => window.cyberTrash.dev.warpToExit());
+await mp.waitForTimeout(500);
+await mshot('17-mobile-context');
+await tapBuffer(240, 232, 900);
+if ((await mprobe(() => window.cyberTrash.screen)) !== 'run') {
+  errors.push('mobile: context button did not ascend cleanly');
+}
+
+// Portrait should tell the player to turn the phone rather than render unplayably.
+await mp.setViewportSize({ width: 390, height: 844 });
+await mp.waitForTimeout(500);
+await mshot('18-mobile-portrait');
+if (!(await mprobe(() => window.cyberTrash.touchEnabled))) {
+  errors.push('mobile: touch controls lost on rotation');
+}
+
+const mobileStats = await mprobe(() => ({
+  screen: window.cyberTrash.screen,
+  touch: window.cyberTrash.touchEnabled,
+  fps: Math.round(window.cyberTrash.fps),
+}));
+if (mobileStats.fps < 30) errors.push(`mobile fps too low: ${mobileStats.fps}`);
+
+await mobile.close();
 await browser.close();
 server.close();
 
@@ -196,4 +337,4 @@ if (errors.length) {
   for (const e of errors) console.error(`  ${e}\n`);
   process.exit(1);
 }
-console.log(`smoke ok  ${JSON.stringify(stats)}\n  screenshots in ${OUT}/`);
+console.log(`smoke ok\n  desktop ${JSON.stringify(stats)}\n  mobile  ${JSON.stringify(mobileStats)}\n  screenshots in ${OUT}/`);

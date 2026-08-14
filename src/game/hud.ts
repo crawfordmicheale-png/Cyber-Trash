@@ -31,7 +31,11 @@ export function layerNameShort(depth: number): string {
   return `THE SCRAP // 0${Math.min(depth + 1, SECTORS_IN_SLICE)}`;
 }
 
-export function drawHud(r: Renderer, world: World): void {
+/**
+ * @param touchLayout when true, the bottom-left corner belongs to the movement
+ *   pad, so the run readouts and notifications move up out from under it.
+ */
+export function drawHud(r: Renderer, world: World, touchLayout = false): void {
   const g = r.g;
   g.setTransform(1, 0, 0, 1, 0, 0);
   const p = world.player;
@@ -138,20 +142,23 @@ export function drawHud(r: Renderer, world: World): void {
   r.glowRect(meterX - 2, Math.round(markerY) - 1, 6, 2, PAL.white, 1, 2);
   drawText(g, 'EXIT', meterX + 4, meterY - 10, { color: PAL.cyan, align: 'right' });
 
-  // ---- scrap ------------------------------------------------------------
-  drawText(g, `SCRAP ${p.scrap}`, 8, VIEW_H - 12, { color: PAL.metalHi, shadow: PAL.black });
-  drawText(g, `KILLS ${world.kills}`, 8, VIEW_H - 22, { color: PAL.metalHi, shadow: PAL.black });
+  // ---- scrap / kills ----------------------------------------------------
+  const statsY = touchLayout ? 40 : VIEW_H - 22;
+  drawText(g, `KILLS ${world.kills}`, 8, statsY, { color: PAL.metalHi, shadow: PAL.black });
+  drawText(g, `SCRAP ${p.scrap}`, 8, statsY + 10, { color: PAL.metalHi, shadow: PAL.black });
 
   // ---- notifications ----------------------------------------------------
-  let ny = VIEW_H - 46;
+  // Stacked downward under the stats on touch, upward from the floor otherwise.
+  let ny = touchLayout ? statsY + 24 : VIEW_H - 46;
   for (const n of world.notifications) {
     const a = clamp(n.life / 0.6, 0, 1);
     drawText(g, `+ ${n.text}`, 8, ny, { color: n.color, glow: n.color, alpha: a, shadow: PAL.black });
-    ny -= 10;
+    ny += touchLayout ? 10 : -10;
   }
 
   // ---- workbench prompt -------------------------------------------------
-  if (world.nearWorkbench) {
+  // Redundant on touch: the BUILD button appears in the same situation.
+  if (world.nearWorkbench && !touchLayout) {
     const y = VIEW_H - 60;
     const label = '[TAB] WORKBENCH';
     const tw = textWidth(label) + 12;
@@ -160,11 +167,10 @@ export function drawHud(r: Renderer, world: World): void {
   }
 
   if (world.exitReached) {
-    const label = 'LAYER CLEARED';
-    drawText(g, label, VIEW_W / 2, VIEW_H / 2 - 20, {
+    drawText(g, 'LAYER CLEARED', VIEW_W / 2, VIEW_H / 2 - 20, {
       color: PAL.white, glow: PAL.cyan, align: 'center', scale: 2,
     });
-    drawText(g, '[E] ASCEND', VIEW_W / 2, VIEW_H / 2 + 2, {
+    drawText(g, touchLayout ? 'TAP [UP] TO ASCEND' : '[E] ASCEND', VIEW_W / 2, VIEW_H / 2 + 2, {
       color: PAL.cyan, glow: PAL.cyan, align: 'center',
     });
   }
