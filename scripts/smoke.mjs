@@ -359,6 +359,11 @@ let failText = await bp.evaluate(() => document.getElementById('boot')?.textCont
 if (!/FAILED TO BOOT/.test(failText)) {
   errors.push(`watchdog silent when bundle.js is missing: "${failText.trim().slice(0, 80)}"`);
 }
+// Served from localhost, so it should give the local-dev remedy. The deployed
+// case gets different wording; telling a phone user to run npm is no help.
+if (!/npm run build/.test(failText)) {
+  errors.push(`watchdog gave no local-dev remedy: "${failText.trim().slice(0, 120)}"`);
+}
 await bp.screenshot({ path: join(OUT, '19-boot-failure.png') });
 
 // 2. bundle.js present but throwing at module evaluation — the shape of the
