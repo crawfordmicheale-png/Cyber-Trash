@@ -328,6 +328,53 @@ const mobileStats = await mprobe(() => ({
 }));
 if (mobileStats.fps < 30) errors.push(`mobile fps too low: ${mobileStats.fps}`);
 
+// ---------------------------------------------------------------------------
+// Boot watchdog: when the bundle cannot run, the boot screen must say so rather
+// than sit there showing a TAP TO DESCEND that does nothing.
+// ---------------------------------------------------------------------------
+const broken = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true });
+const bp = await broken.newPage();
+// Swallow the errors this case exists to provoke.
+bp.on('pageerror', () => {});
+bp.on('console', () => {});
+
+// 1. bundle.js missing entirely.
+await bp.route(/bundle\.js/, (route) => route.fulfill({ status: 404, body: 'not found' }));
+await bp.goto(`http://localhost:${PORT}/`);
+await bp.waitForTimeout(600);
+let failText = await bp.evaluate(() => document.getElementById('boot')?.textContent ?? '');
+if (!/FAILED TO BOOT/.test(failText)) {
+  errors.push(`watchdog silent when bundle.js is missing: "${failText.trim().slice(0, 80)}"`);
+}
+await bp.screenshot({ path: join(OUT, '19-boot-failure.png') });
+
+// 2. bundle.js present but throwing at module evaluation — the shape of the
+//    real "structuredClone is not defined on an older phone" failure.
+await bp.unroute(/bundle\.js/);
+await bp.route(/bundle\.js/, (route) =>
+  route.fulfill({ status: 200, contentType: 'text/javascript', body: 'throw new Error("simulated old browser");' }));
+await bp.goto(`http://localhost:${PORT}/`);
+await bp.waitForTimeout(600);
+failText = await bp.evaluate(() => document.getElementById('boot')?.textContent ?? '');
+if (!/FAILED TO BOOT/.test(failText) || !/simulated old browser/.test(failText)) {
+  errors.push(`watchdog did not surface a module-eval throw: "${failText.trim().slice(0, 80)}"`);
+}
+await broken.close();
+
+// The shipped bundle must parse on an older phone. This is the regression guard
+// for the actual bug: an ES2022-only bundle silently fails to run on iOS < 16.
+const bundleSrc = await readFile('dist/bundle.js', 'utf8');
+if (/\bstructuredClone\b/.test(bundleSrc)) {
+  errors.push('bundle uses structuredClone (unavailable before Safari 15.4)');
+}
+try {
+  const { parse } = await import('acorn');
+  parse(bundleSrc, { ecmaVersion: 2019, sourceType: 'module' });
+} catch (e) {
+  if (e.code === 'ERR_MODULE_NOT_FOUND') console.warn('  (acorn not installed; skipped ES2019 syntax check)');
+  else errors.push(`bundle does not parse as ES2019: ${e.message}`);
+}
+
 await mobile.close();
 await browser.close();
 server.close();

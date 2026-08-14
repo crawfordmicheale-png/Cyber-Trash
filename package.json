@@ -12,6 +12,7 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
+    "acorn": "^8.18.0",
     "esbuild": "^0.28.2",
     "playwright": "^1.62.1",
     "typescript": "^5.9.3"

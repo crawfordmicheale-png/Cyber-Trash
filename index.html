@@ -61,6 +61,12 @@
     .keys-only { display: none; }
     #boot b { font-size: 24px; }
   }
+  #boot .build { display: block; margin-top: 16px; color: #23232e; font-size: 10px; letter-spacing: .2em; }
+  #boot .fail b { color: #ff3355; text-shadow: 0 0 18px rgba(255,51,85,.7); }
+  #boot .fail .why { display: block; color: #ffe74c; letter-spacing: .08em;
+    font-size: 12px; margin-bottom: 14px; word-break: break-word; }
+  #boot .fail .fix { display: block; color: #6a6a80; letter-spacing: .06em;
+    font-size: 11px; line-height: 1.8; word-break: break-word; }
 </style>
 </head>
 <body>
@@ -78,8 +84,64 @@
         HOLD YOUR PHONE IN LANDSCAPE<br>
         ON-SCREEN CONTROLS APPEAR ONCE YOU START
       </small>
+      <span class="build">BUILD __BUILD__</span>
     </div>
   </div>
+  <!--
+    Boot watchdog. Deliberately plain ES5 and outside the bundle, so it still
+    runs when the bundle itself is the thing that is broken.
+
+    Without this, any failure to load or evaluate bundle.js leaves the boot
+    screen sitting there with a working-looking "TAP TO DESCEND" that does
+    nothing, because the tap handler lives in the code that never ran. This
+    turns that silence into a message you can read on the phone.
+  -->
+  <script>
+  (function () {
+    var boot = document.getElementById('boot');
+    var reported = false;
+
+    function report(why, fix) {
+      if (reported || !boot) return;
+      reported = true;
+      boot.innerHTML =
+        '<div class="fail"><b>FAILED TO BOOT</b>' +
+        '<span class="why"></span><span class="fix"></span></div>';
+      boot.querySelector('.why').textContent = String(why).slice(0, 300);
+      boot.querySelector('.fix').textContent = fix;
+    }
+
+    // Capture phase catches resource load failures (a missing bundle.js) as
+    // well as ordinary script errors.
+    window.addEventListener('error', function (e) {
+      if (e.target && e.target !== window && e.target.tagName === 'SCRIPT') {
+        report('bundle.js failed to load', 'Run "npm run build" (or "npm run dev") and reload.');
+        return;
+      }
+      var msg = (e.error && e.error.message) || e.message || 'script error';
+      report(msg, 'This browser could not run the game code. Try an up-to-date browser.');
+    }, true);
+
+    window.addEventListener('unhandledrejection', function (e) {
+      var r = e.reason;
+      report((r && r.message) || r || 'unhandled rejection', 'Reload, and report this message.');
+    });
+
+    setTimeout(function () {
+      if (!window.__cyberTrashReady) {
+        report('the game code never started',
+          'bundle.js is missing, blocked, or too new for this browser.');
+      }
+    }, 5000);
+  })();
+  </script>
   <script type="module" src="./bundle.js"></script>
+  <!-- A browser with no ES-module support skips the tag above entirely. -->
+  <script nomodule>
+    document.getElementById('boot').innerHTML =
+      '<div class="fail"><b>FAILED TO BOOT</b>' +
+      '<span class="why">this browser does not support javascript modules</span>' +
+      '<span class="fix">CYBER-TRASH needs a browser from 2018 or later.</span></div>';
+  </script>
 </body>
 </html>

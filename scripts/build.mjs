@@ -1,12 +1,27 @@
 import * as esbuild from 'esbuild';
-import { mkdirSync, copyFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { networkInterfaces } from 'node:os';
 
 const watch = process.argv.includes('--watch');
 const serve = process.argv.includes('--serve');
 
 mkdirSync('dist', { recursive: true });
-copyFileSync('index.html', 'dist/index.html');
+
+/**
+ * Emit dist/index.html with a fresh cache-busting stamp on the bundle URL.
+ *
+ * Phones cache aggressively, and "I reloaded and it is still broken" is
+ * impossible to tell apart from "the fix did not work" without this. The stamp
+ * is also shown on the boot screen so the build on screen is identifiable.
+ */
+function writeHtml() {
+  const stamp = Date.now().toString(36);
+  const html = readFileSync('index.html', 'utf8')
+    .replace('./bundle.js', `./bundle.js?v=${stamp}`)
+    .replace('__BUILD__', stamp);
+  writeFileSync('dist/index.html', html);
+  return stamp;
+}
 
 /** @type {import('esbuild').BuildOptions} */
 const options = {
@@ -14,7 +29,11 @@ const options = {
   bundle: true,
   outfile: 'dist/bundle.js',
   format: 'esm',
-  target: 'es2022',
+  // Deliberately conservative: this has to parse on whatever phone someone
+  // points at the dev server. A syntax feature the browser cannot parse fails
+  // the whole bundle silently, which looks exactly like "the game is broken".
+  // es2019 covers iOS 13+ and esbuild downlevels the newer syntax we use.
+  target: 'es2019',
   sourcemap: watch,
   minify: !watch,
   logLevel: 'info',
@@ -29,6 +48,10 @@ function lanAddresses() {
 }
 
 if (watch) {
+  options.plugins = [{
+    name: 'html',
+    setup(build) { build.onEnd(() => { writeHtml(); }); },
+  }];
   const ctx = await esbuild.context(options);
   await ctx.watch();
   if (serve) {
@@ -43,5 +66,6 @@ if (watch) {
   }
 } else {
   await esbuild.build(options);
-  console.log('  built -> dist/bundle.js');
+  const stamp = writeHtml();
+  console.log(`  built -> dist/bundle.js  (build ${stamp})`);
 }

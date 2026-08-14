@@ -617,7 +617,18 @@ function devHooks(): Record<string, (...args: never[]) => void> | null {
   };
 }
 
+declare global {
+  interface Window {
+    /** Read by the boot watchdog in index.html. */
+    __cyberTrashReady?: boolean;
+  }
+}
+
 function boot(): void {
+  // Tell the watchdog the bundle parsed and is executing. Anything that throws
+  // from here on is caught by the window error handler and shown on screen.
+  window.__cyberTrashReady = true;
+
   const stage = document.getElementById('stage');
   const bootScreen = document.getElementById('boot');
   if (!stage) throw new Error('missing #stage');
@@ -625,16 +636,30 @@ function boot(): void {
   const game = new Game(stage);
   gameInstance = game;
 
+  let started = false;
   const begin = (): void => {
-    audio.init();
-    audio.resume();
+    if (started) return;
+    started = true;
+    // Audio needs a user gesture and can be refused outright by locked-down
+    // browsers. A silent game is far better than a game that will not start.
+    try {
+      audio.init();
+      audio.resume();
+    } catch {
+      /* no audio; carry on */
+    }
     bootScreen?.remove();
     game.start();
   };
 
   if (bootScreen) {
-    bootScreen.addEventListener('click', begin, { once: true });
-    window.addEventListener('keydown', begin, { once: true });
+    // Several routes to the same gesture. Tap-to-start is the one interaction
+    // every player must succeed at, so it does not hang off a single event
+    // type: some mobile browsers drop the synthesised click after a touch.
+    bootScreen.addEventListener('click', begin);
+    bootScreen.addEventListener('touchend', begin);
+    bootScreen.addEventListener('pointerup', begin);
+    window.addEventListener('keydown', begin);
   } else {
     begin();
   }

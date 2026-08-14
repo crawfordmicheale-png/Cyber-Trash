@@ -30,16 +30,27 @@ export interface SaveData {
   };
 }
 
-const DEFAULT: SaveData = {
-  scrap: 0,
-  blueprints: [],
-  characters: ['drifter'],
-  bestDepth: 0,
-  bestHaul: 0,
-  runs: 0,
-  kills: 0,
-  upgrades: { vitality: 0, reflex: 0, scavenger: 0, ordnance: 0 },
-};
+/**
+ * A brand-new save.
+ *
+ * Built fresh each call rather than cloned from a shared constant: this runs at
+ * module-evaluation time, so it must not depend on anything the browser might
+ * not have. `structuredClone` lived here and is only available from Safari
+ * 15.4 — on an older phone it threw before a single line of the game ran, which
+ * left the boot screen up and every tap doing nothing.
+ */
+function freshSave(): SaveData {
+  return {
+    scrap: 0,
+    blueprints: [],
+    characters: ['drifter'],
+    bestDepth: 0,
+    bestHaul: 0,
+    runs: 0,
+    kills: 0,
+    upgrades: { vitality: 0, reflex: 0, scavenger: 0, ordnance: 0 },
+  };
+}
 
 export const UPGRADE_INFO = {
   vitality: { name: 'REINFORCED RIBS', desc: '+12 MAX HP', baseCost: 120, step: 90, max: 6 },
@@ -51,7 +62,7 @@ export const UPGRADE_INFO = {
 export type UpgradeKey = keyof SaveData['upgrades'];
 
 class SaveStore {
-  data: SaveData = structuredClone(DEFAULT);
+  data: SaveData = freshSave();
   /** False when localStorage is unavailable (private mode, file://, etc). */
   persistent = true;
 
@@ -60,15 +71,16 @@ class SaveStore {
       const raw = localStorage.getItem(KEY);
       if (!raw) return;
       const parsed = JSON.parse(raw) as Partial<SaveData>;
+      const base = freshSave();
       this.data = {
-        ...structuredClone(DEFAULT),
+        ...base,
         ...parsed,
-        upgrades: { ...DEFAULT.upgrades, ...(parsed.upgrades ?? {}) },
+        upgrades: { ...base.upgrades, ...(parsed.upgrades ?? {}) },
       };
     } catch {
       // A corrupt save should never stop the game booting.
       this.persistent = false;
-      this.data = structuredClone(DEFAULT);
+      this.data = freshSave();
     }
   }
 
@@ -82,7 +94,7 @@ class SaveStore {
   }
 
   reset(): void {
-    this.data = structuredClone(DEFAULT);
+    this.data = freshSave();
     this.save();
   }
 
