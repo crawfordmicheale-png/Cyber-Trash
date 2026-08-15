@@ -8,7 +8,8 @@ import { PAL } from '../render/palette';
  * transform + VFX, so this file stays this short no matter how many weapons,
  * abilities or elements get added later.
  *
- * Rows are 17 wide, 30 tall, pivot at the feet (centre column 8).
+ * Rows are ~17–19 wide, ~30 tall, pivot at the feet. Authored to match the
+ * cyber-trash character lineup sheet (Neon Drifter / Junk Reaper).
  */
 
 /**
@@ -28,57 +29,83 @@ const SKIN = {
 };
 
 // ---------------------------------------------------------------------------
-// 01 — NEON DRIFTER. White spiked hair, X-visor, magenta scarf.
+// 01 — NEON DRIFTER. Spiked white hair, cyan X-visor, magenta scarf & coat
+// lining, chunky boots with cyan/magenta soles. Matches lineup sheet #01.
 // ---------------------------------------------------------------------------
 const DRIFTER_DEF: SpriteDef = {
   pal: {
     ...SKIN,
-    h: '#8f8aa0',
+    h: '#9a95aa',
     H: '#ffffff',
     X: PAL.cyan,
     s: PAL.magenta,
-    p: PAL.magenta,
+    p: '#ff6eb5',
+    c: PAL.cyan,
+    i: '#ff2d95', // coat lining
+  },
+  glow: 'Xpcsi',
+  blur: 2,
+  glowStrength: 0.9,
+  rows: [
+    '     h h h h     ',
+    '    hHhHhHhHh    ',
+    '   hHHHHHHHHHh   ',
+    '   kHHHHHHHHHk   ',
+    '   kmMMMMMMMMk   ',
+    '   kmXMmmXMmk   ',
+    '   kmXMmmXMmk   ',
+    '   kmmMMMMMmk   ',
+    '    kmmmmmMk     ',
+    '    ssssssss     ',
+    '   kssssssssk    ',
+    '  kdiiiiiiiidk   ',
+    ' kddjjjjjjjjddk  ',
+    ' kdljjwwwjjjldk  ',
+    ' kdljkwpwkwjldk  ',
+    ' kdljjwwwjjjldk  ',
+    ' kdljjjwjjjjldk  ',
+    ' kddjjjjjjjjddk  ',
+    '  kdjjjjjjjjdk   ',
+    '  kkdjjjjjjdkk   ',
+    '   kggggggggk    ',
+    '   kgcgggcggk    ',
+    '   kggggggggk    ',
+    '   kgg.kk.ggk    ',
+    '   kgk....kgk    ',
+    '   kgk....kgk    ',
+    '   kgk....kgk    ',
+    '  kbbkc..pkbbk   ',
+    ' kbbbkk..kkbbbk  ',
+    ' kkkkkk..kkkkkk  ',
+  ],
+};
+
+/** Floating companion drone — the X-eyed orb from the Drifter sheet. */
+export const DRIFTER_DRONE: SpriteDef = {
+  pal: {
+    k: '#05050a',
+    m: '#1a1824',
+    M: '#2e2b3a',
+    X: PAL.cyan,
     c: PAL.cyan,
   },
-  glow: 'Xpcs',
+  glow: 'Xc',
   blur: 2,
-  glowStrength: 0.85,
+  glowStrength: 1.1,
   rows: [
-    '     h  h  h     ',
-    '    hHhhHhhHh    ',
-    '    hHHHHHHHh    ',
-    '    kHHHHHHHk    ',
-    '    kmmmmmmmk    ',
-    '    kmXmmmXmk    ',
-    '    kmXmmmXmk    ',
-    '    kmmmmmmmk    ',
-    '     kmmmmmk     ',
-    '     sssssss     ',
-    '    ksssssssk    ',
-    '   kdjjjjjjjdk   ',
-    '  kddjjwwwjjddk  ',
-    '  kdljkwwwkjldk  ',
-    '  kdljkwpwkjldk  ',
-    '  kdljkwwwkjldk  ',
-    '  kdljjwwwjjldk  ',
-    '  kddjjjjjjjddk  ',
-    '   kdjjjjjjjdk   ',
-    '   kkdjjjjjdkk   ',
-    '    kgggggggk    ',
-    '    kgcgggcgk    ',
-    '    kgggggggk    ',
-    '    kgg.k.ggk    ',
-    '    kgk...kgk    ',
-    '    kgk...kgk    ',
-    '    kgk...kgk    ',
-    '   kbbk...kbbk   ',
-    '  kbbbk...kbbbk  ',
-    '  kkkkk...kkkkk  ',
+    '..kkk..',
+    '.kMMMk.',
+    'kMXXkMk',
+    'kMXkXMk',
+    'kMXXkMk',
+    '.kMMMk.',
+    '..kkk..',
   ],
 };
 
 // ---------------------------------------------------------------------------
-// 02 — JUNK REAPER. Hooded, tattered, lime-lit skull face.
+// 02 — JUNK REAPER. Tattered hood, yellow gas-mask eyes, toxin tubes,
+// circular hazard mark. Matches lineup sheet #02.
 // ---------------------------------------------------------------------------
 const REAPER_DEF: SpriteDef = {
   pal: {
@@ -87,44 +114,45 @@ const REAPER_DEF: SpriteDef = {
     j: '#3c3749',
     l: '#544d64',
     r: '#4a3628', // rope / leather
-    Y: PAL.lime,
-    o: '#8a7a4a', // bone
+    Y: PAL.yellow,
+    o: '#8a7a4a', // bone / mask
     c: PAL.lime,
+    t: '#ffe74c', // tube
   },
-  glow: 'Yc',
+  glow: 'Yct',
   blur: 2,
-  glowStrength: 0.9,
+  glowStrength: 0.95,
   rows: [
     '     ddddddd     ',
-    '    dddddddddd   ',
-    '   dddjjjjjddd   ',
-    '   ddjkkkkkjdd   ',
-    '   ddjkkkkkjdd   ',
-    '   ddkkYkYkkdd   ',
-    '   ddkkkkkkkdd   ',
-    '   ddjkoookjdd   ',
-    '   dddjjjjjddd   ',
-    '   dddddddddd    ',
-    '  ddddjjjjjdddd  ',
+    '   ddddddddddd   ',
     '  dddjjjjjjjddd  ',
-    ' ddddjjjjjjjdddd ',
-    ' dddjjjrrrjjjddd ',
-    ' dddjjjrYrjjjddd ',
-    ' dddjjjrrrjjjddd ',
-    ' ddddjjjjjjjdddd ',
-    '  dddjjjjjjjddd  ',
-    '  dddjjjjjjjddd  ',
-    '  ddjjjjjjjjjdd  ',
-    '   ddjjjjjjjdd   ',
-    '   ddjjjjjjjdd   ',
-    '   dddjjjjjddd   ',
-    '   dd.dddd.ddd   ',
-    '    ddd..dddd    ',
-    '    kgk...kgk    ',
-    '    kgk...kgk    ',
-    '   kbbk...kbbk   ',
-    '  kbbbk...kbbbk  ',
-    '  kkkkk...kkkkk  ',
+    '  ddjkkkkkkkjdd  ',
+    '  ddjkoookoojdd  ',
+    '  ddkkYkkYkkdd   ',
+    '  ddkkkkkkkkdd   ',
+    '  ddjkoookojdd   ',
+    '  dddjjjjjjddd   ',
+    '  ddddddddddd    ',
+    ' ddddjjYjjdddd   ',
+    ' dddjjjjjjjjddd  ',
+    'ddddjjjjjjjjdddd ',
+    'dddjjjrrrjjjjddd ',
+    'dddjjjrYrjjjjddd ',
+    'dddjttrrrttjjddd ',
+    'ddddjjjjjjjjdddd ',
+    ' dddjjjjjjjjddd  ',
+    ' dddjjjjjjjjddd  ',
+    ' ddjjjjjjjjjjdd  ',
+    '  ddjjjjjjjjdd   ',
+    '  ddjjtjjtjjdd   ',
+    '  dddjjjjjjddd   ',
+    '  dd.ddddd.ddd   ',
+    '   ddd...dddd    ',
+    '   kgk...kgk     ',
+    '   kgk...kgk     ',
+    '  kbbk...kbbk    ',
+    ' kbbbk...kbbbk   ',
+    ' kkkkk...kkkkk   ',
   ],
 };
 
@@ -133,6 +161,8 @@ export interface CharacterArt {
   name: string;
   tagline: string;
   sprite: Sprite;
+  /** Optional orbiting companion drawn beside the character. */
+  drone?: Sprite;
   /** Trail / dash colour and general UI accent for this character. */
   accent: string;
   /** Gameplay tuning knobs the character brings with it. */
@@ -147,6 +177,12 @@ export interface CharacterArt {
 }
 
 let cache: CharacterArt[] | null = null;
+let droneCache: Sprite | null = null;
+
+export function drifterDrone(): Sprite {
+  if (!droneCache) droneCache = compile(DRIFTER_DRONE);
+  return droneCache;
+}
 
 export function characters(): CharacterArt[] {
   if (cache) return cache;
@@ -156,6 +192,7 @@ export function characters(): CharacterArt[] {
       name: 'NEON DRIFTER',
       tagline: 'THREW THEMSELF IN. NOBODY KNOWS WHY.',
       sprite: compile(DRIFTER_DEF),
+      drone: compile(DRIFTER_DRONE),
       accent: PAL.magenta,
       stats: { maxHp: 100, speed: 1, jumpPower: 1, dashes: 1 },
       unlockCost: 0,

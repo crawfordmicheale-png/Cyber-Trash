@@ -648,6 +648,16 @@ function boot(): void {
     } catch {
       /* no audio; carry on */
     }
+    // Same gesture can claim fullscreen on mobile. iOS ignores this; Android
+    // Chrome and most PWA installs take it and hide browser chrome.
+    try {
+      const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+      if (coarse && document.documentElement.requestFullscreen) {
+        void document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {
+      /* fullscreen refused; play windowed */
+    }
     bootScreen?.remove();
     game.start();
   };

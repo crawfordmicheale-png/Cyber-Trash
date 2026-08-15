@@ -33,7 +33,8 @@ export function layerNameShort(depth: number): string {
 
 /**
  * @param touchLayout when true, the bottom-left corner belongs to the movement
- *   pad, so the run readouts and notifications move up out from under it.
+ *   pad, so the run readouts and notifications move up out from under it. The
+ *   weapon card also shrinks so thumbs on the right don't cover the name.
  */
 export function drawHud(r: Renderer, world: World, touchLayout = false): void {
   const g = r.g;
@@ -41,7 +42,7 @@ export function drawHud(r: Renderer, world: World, touchLayout = false): void {
   const p = world.player;
 
   // ---- health -----------------------------------------------------------
-  const hpW = 84;
+  const hpW = touchLayout ? 72 : 84;
   const hpPct = clamp(p.hp / p.maxHp, 0, 1);
   g.fillStyle = rgba(PAL.black, 0.8);
   g.fillRect(6, 6, hpW + 4, 9);
@@ -61,7 +62,7 @@ export function drawHud(r: Renderer, world: World, touchLayout = false): void {
 
   // ---- ammo -------------------------------------------------------------
   if (p.weapon.ammoCost > 0 || p.ammo < p.maxAmmo) {
-    const aW = 52;
+    const aW = touchLayout ? 44 : 52;
     const aPct = clamp(p.ammo / p.maxAmmo, 0, 1);
     g.fillStyle = rgba(PAL.black, 0.8);
     g.fillRect(6, 18, aW + 4, 7);
@@ -82,10 +83,10 @@ export function drawHud(r: Renderer, world: World, touchLayout = false): void {
 
   // ---- weapon card ------------------------------------------------------
   const w = p.weapon;
-  const cardW = 148;
+  const cardW = touchLayout ? 128 : 148;
   const cardX = VIEW_W - cardW - 6;
   const cardY = 6;
-  r.panel(cardX, cardY, cardW, 40, rgba(RARITY[w.rarity].color, 0.9), 0.78);
+  r.panel(cardX, cardY, cardW, touchLayout ? 34 : 40, rgba(RARITY[w.rarity].color, 0.9), 0.78);
 
   // Row 1: the generated name gets the full card width. Names like
   // "AUTONOMOUS ELECTRIFIED NAILGUN OF QUESTIONABLE INTEGRITY" are the point of
@@ -107,19 +108,21 @@ export function drawHud(r: Renderer, world: World, touchLayout = false): void {
   if (clipped) g.restore();
 
   // Row 2: the assembled weapon, drawn small, with its stats beside it.
-  drawWeapon(r, w, cardX + pad + 4, cardY + 26, -0.24, false, 1);
+  drawWeapon(r, w, cardX + pad + 4, cardY + (touchLayout ? 24 : 26), -0.24, false, 1);
   drawText(g, `${w.style.label} ${w.damage.toFixed(0)}DMG`, cardX + cardW - pad, cardY + 18, {
     color: w.style.glow, align: 'right', shadow: PAL.black,
   });
-  if (w.instability > 0) {
-    const risky = Math.sin(time.elapsed * 8) > 0;
-    drawText(g, `UNSTABLE ${(w.instability * 100).toFixed(0)}%`, cardX + cardW - pad, cardY + 28, {
-      color: risky ? PAL.orange : PAL.blood, align: 'right', shadow: PAL.black,
-    });
-  } else {
-    drawText(g, w.base.name, cardX + cardW - pad, cardY + 28, {
-      color: PAL.metalHi, align: 'right', shadow: PAL.black,
-    });
+  if (!touchLayout) {
+    if (w.instability > 0) {
+      const risky = Math.sin(time.elapsed * 8) > 0;
+      drawText(g, `UNSTABLE ${(w.instability * 100).toFixed(0)}%`, cardX + cardW - pad, cardY + 28, {
+        color: risky ? PAL.orange : PAL.blood, align: 'right', shadow: PAL.black,
+      });
+    } else {
+      drawText(g, w.base.name, cardX + cardW - pad, cardY + 28, {
+        color: PAL.metalHi, align: 'right', shadow: PAL.black,
+      });
+    }
   }
 
   // ---- layer + climb ----------------------------------------------------
@@ -128,10 +131,10 @@ export function drawHud(r: Renderer, world: World, touchLayout = false): void {
   });
 
   // Climb meter down the right edge: the "always curious what's above" pillar,
-  // made legible.
-  const meterH = 116;
+  // made legible. On touch it stops above the action cluster.
+  const meterH = touchLayout ? 88 : 116;
   const meterX = VIEW_W - 8;
-  const meterY = 62;
+  const meterY = touchLayout ? 48 : 62;
   g.fillStyle = rgba(PAL.black, 0.7);
   g.fillRect(meterX - 1, meterY - 2, 4, meterH + 4);
   g.fillStyle = PAL.metalDark;
