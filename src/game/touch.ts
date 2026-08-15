@@ -13,6 +13,9 @@ import { time } from '../core/time';
  * press routes through `input.virtualDown/Up`, which is the same state keys
  * use, so nothing in the game has any idea whether it was played on a keyboard
  * or a thumb.
+ *
+ * Layout centres are pinned so the smoke suite can hit them by buffer coordinate.
+ * Visual size and padding can grow around those centres without breaking tests.
  */
 
 export type TouchMode = 'none' | 'gameplay' | 'menu';
@@ -40,35 +43,38 @@ const centreOf = (s: Shape): [number, number] =>
 /**
  * Gameplay layout, landscape. Movement under the left thumb, actions under the
  * right, nothing in the middle third where the character and the fight are.
+ *
+ * Centres (used by smoke): LEFT 34,231 · RIGHT 90,231 · JUMP 446,226 ·
+ * HIT 388,210 · CONTEXT 240,232.
  */
 const GAMEPLAY: Button[] = [
-  { id: 'left', action: 'left', label: '<', color: PAL.cyan, shape: rect(8, 200, 52, 62), pad: 8 },
-  { id: 'right', action: 'right', label: '>', color: PAL.cyan, shape: rect(64, 200, 52, 62), pad: 8 },
+  { id: 'left', action: 'left', label: '<', color: PAL.cyan, shape: rect(6, 196, 56, 68), pad: 10 },
+  { id: 'right', action: 'right', label: '>', color: PAL.cyan, shape: rect(62, 196, 56, 68), pad: 10 },
   // Drop-through is rare, so it gets a small plate tucked above the left thumb
   // rather than a full-size pad sitting in the middle of the play area.
-  { id: 'down', action: 'down', label: 'DROP', color: PAL.metalHi, shape: rect(8, 168, 52, 26), pad: 5 },
+  { id: 'down', action: 'down', label: 'DROP', color: PAL.metalHi, shape: rect(6, 162, 56, 28), pad: 6 },
 
-  { id: 'jump', action: 'jump', label: 'JUMP', color: PAL.lime, shape: disc(446, 226, 27), pad: 8 },
-  { id: 'attack', action: 'attack', label: 'HIT', color: PAL.magenta, shape: disc(388, 210, 27), pad: 8 },
-  { id: 'dash', action: 'dash', label: 'DASH', color: PAL.violet, shape: disc(444, 164, 23), pad: 6 },
-  { id: 'throw', action: 'throw', label: 'LOB', color: PAL.orange, shape: disc(388, 148, 23), pad: 6 },
+  { id: 'jump', action: 'jump', label: 'JUMP', color: PAL.lime, shape: disc(446, 226, 30), pad: 10 },
+  { id: 'attack', action: 'attack', label: 'HIT', color: PAL.magenta, shape: disc(388, 210, 30), pad: 10 },
+  { id: 'dash', action: 'dash', label: 'DASH', color: PAL.violet, shape: disc(444, 160, 25), pad: 8 },
+  { id: 'throw', action: 'throw', label: 'LOB', color: PAL.orange, shape: disc(388, 144, 25), pad: 8 },
 ];
 
-/** Menu layout: a d-pad and confirm/cancel. */
+/** Menu layout: a d-pad and confirm/cancel. Down centre stays near (62, 254). */
 const MENU: Button[] = [
   // Sits below the settlement's character panel (which ends at y=162) so the
   // cross never covers the thing you are choosing between.
-  { id: 'mup', action: 'up', label: 'UP', color: PAL.cyan, shape: rect(42, 168, 40, 36), pad: 6 },
-  { id: 'mleft', action: 'left', label: '<', color: PAL.cyan, shape: rect(2, 204, 40, 36), pad: 6 },
-  { id: 'mright', action: 'right', label: '>', color: PAL.cyan, shape: rect(82, 204, 40, 36), pad: 6 },
-  { id: 'mdown', action: 'down', label: 'DN', color: PAL.cyan, shape: rect(42, 240, 40, 28), pad: 6 },
+  { id: 'mup', action: 'up', label: 'UP', color: PAL.cyan, shape: rect(40, 164, 44, 40), pad: 8 },
+  { id: 'mleft', action: 'left', label: '<', color: PAL.cyan, shape: rect(0, 202, 44, 40), pad: 8 },
+  { id: 'mright', action: 'right', label: '>', color: PAL.cyan, shape: rect(80, 202, 44, 40), pad: 8 },
+  { id: 'mdown', action: 'down', label: 'DN', color: PAL.cyan, shape: rect(40, 240, 44, 30), pad: 8 },
 
-  { id: 'ok', action: 'confirm', label: 'OK', color: PAL.lime, shape: disc(438, 218, 30), pad: 10 },
-  { id: 'back', action: 'cancel', label: 'BACK', color: PAL.metalHi, shape: disc(438, 154, 22), pad: 8 },
+  { id: 'ok', action: 'confirm', label: 'OK', color: PAL.lime, shape: disc(438, 218, 32), pad: 12 },
+  { id: 'back', action: 'cancel', label: 'BACK', color: PAL.metalHi, shape: disc(438, 150, 24), pad: 10 },
 ];
 
 /** Contextual button — only drawn when there is something to interact with. */
-const CONTEXT_SHAPE = disc(240, 232, 26);
+const CONTEXT_SHAPE = disc(240, 232, 28);
 
 export class TouchControls {
   /** Controls are visible and consuming input. */
@@ -193,7 +199,7 @@ export class TouchControls {
 
     for (const b of this.buttons()) consider(b.id, b.shape, b.pad);
     if (this.mode === 'gameplay' && this.contextAction) {
-      consider('context', CONTEXT_SHAPE, 10);
+      consider('context', CONTEXT_SHAPE, 12);
     }
     return best;
   }
@@ -321,7 +327,7 @@ export class TouchControls {
         label: this.contextLabel,
         color: PAL.lime,
         shape: CONTEXT_SHAPE,
-        pad: 10,
+        pad: 12,
       }, this.isPressed('context'));
     }
 
@@ -332,9 +338,10 @@ export class TouchControls {
     // A short afterglow on release, so a quick tap still registers visually.
     const since = time.elapsed - (this.releasedAt.get(b.id) ?? -99);
     const glow = down ? 1 : Math.max(0, 1 - since / 0.18) * 0.7;
-
-    const fill = rgba(b.color, 0.1 + glow * 0.34);
-    const line = rgba(b.color, 0.5 + glow * 0.5);
+    // Idle pads stay ghosted so the fight reads through them; pressed ones light up.
+    const idle = 0.08;
+    const fill = rgba(b.color, idle + glow * 0.42);
+    const line = rgba(b.color, 0.35 + glow * 0.55);
 
     g.save();
     if (b.shape.kind === 'rect') {
@@ -355,19 +362,25 @@ export class TouchControls {
       g.fillStyle = fill;
       g.fill();
       g.strokeStyle = line;
-      g.lineWidth = 1;
+      g.lineWidth = down ? 2 : 1;
       g.stroke();
+      // Inner bracket ticks — reads as bolted scrap HUD, not a flat plate.
+      g.fillStyle = line;
+      g.fillRect(x + 2, y + 2, 4, 1);
+      g.fillRect(x + 2, y + 2, 1, 4);
+      g.fillRect(x + w - 6, y + h - 3, 4, 1);
+      g.fillRect(x + w - 3, y + h - 6, 1, 4);
       drawText(g, b.label, x + w / 2, y + h / 2 - 3, {
         color: down ? PAL.white : b.color, align: 'center', glow: glow > 0.1 ? b.color : undefined,
       });
     } else {
-      const { x, y, r } = b.shape;
+      const { x, y, r: rad } = b.shape;
       // Octagon rather than a circle — antialiased curves fight the pixel art.
       g.beginPath();
       for (let i = 0; i < 8; i++) {
         const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-        const px = x + Math.cos(a) * r;
-        const py = y + Math.sin(a) * r;
+        const px = x + Math.cos(a) * rad;
+        const py = y + Math.sin(a) * rad;
         if (i === 0) g.moveTo(px, py);
         else g.lineTo(px, py);
       }
@@ -375,8 +388,18 @@ export class TouchControls {
       g.fillStyle = fill;
       g.fill();
       g.strokeStyle = line;
-      g.lineWidth = 1;
+      g.lineWidth = down ? 2 : 1;
       g.stroke();
+      // Tiny X motif in the ring — the graffiti brand from the reference sheets.
+      if (glow > 0.4) {
+        g.strokeStyle = rgba(b.color, 0.55);
+        g.lineWidth = 1;
+        const s = rad * 0.22;
+        g.beginPath();
+        g.moveTo(x - s, y - s); g.lineTo(x + s, y + s);
+        g.moveTo(x + s, y - s); g.lineTo(x - s, y + s);
+        g.stroke();
+      }
       drawText(g, b.label, x, y - 3, {
         color: down ? PAL.white : b.color, align: 'center', glow: glow > 0.1 ? b.color : undefined,
       });
@@ -386,13 +409,16 @@ export class TouchControls {
 
   private drawRotateHint(g: CanvasRenderingContext2D): void {
     g.save();
-    g.fillStyle = rgba(PAL.void, 0.88);
+    g.fillStyle = rgba(PAL.void, 0.9);
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     const blink = Math.sin(time.elapsed * 3) > -0.4;
-    drawText(g, 'ROTATE YOUR DEVICE', VIEW_W / 2, VIEW_H / 2 - 12, {
+    drawText(g, 'ROTATE YOUR DEVICE', VIEW_W / 2, VIEW_H / 2 - 18, {
       color: blink ? PAL.magenta : PAL.magentaDim, glow: PAL.magenta, align: 'center', scale: 2,
     });
-    drawText(g, 'CYBER-TRASH IS PLAYED IN LANDSCAPE', VIEW_W / 2, VIEW_H / 2 + 10, {
+    drawText(g, 'CYBER-TRASH IS PLAYED IN LANDSCAPE', VIEW_W / 2, VIEW_H / 2 + 6, {
+      color: PAL.cyan, align: 'center', glow: PAL.cyanDim,
+    });
+    drawText(g, 'THUMBS ON THE EDGES · FIGHT IN THE MIDDLE', VIEW_W / 2, VIEW_H / 2 + 24, {
       color: PAL.metalHi, align: 'center',
     });
     g.restore();

@@ -31,7 +31,7 @@ const NEON = {
   O: PAL.orange,
 };
 
-const GLOW_CHARS = 'GCPVYO';
+const GLOW_CHARS = 'GCPVYOX';
 
 function def(rows: string[], extra: Record<string, string> = {}, opts: Partial<SpriteDef> = {}): SpriteDef {
   return {
@@ -53,7 +53,7 @@ const SCRAP_RAT = def([
   '.........kMMk.......',
   '..kkkkk..kMMk.......',
   '.kMMMMMkkkkkk...kk..',
-  '.kMGMMMMMMMMk..kMwk.',
+  '.kMVMMMMMMMMk..kMwk.',
   'kMMMMMMMMMMMMkkMwk..',
   'kbMMMMMMMMMMMMMwk...',
   '.kMMMMMMMMMMMMk.....',
@@ -67,11 +67,11 @@ const GARBAGE_HOUND = def([
   '.................kk.....',
   '..kk............kMMk....',
   '.kMMk..kkkkkkk..kMMk....',
-  '.kMPk.kMMMMMMMkkkMMk....',
+  '.kMGk.kMMMMMMMkkkMMk....',
   '.kMMkkMMMMMMMMMMMMMk....',
   'kMGMMMMMMMMMMMMMMMk.....',
   'kMMMMMMrrrMMMMMMMk......',
-  '.kMMMMMrPrMMMMMMk.......',
+  '.kMMMMMrGrMMMMMMk.......',
   '.kMMkkkrrrkkkMMMk.......',
   '..kMk..kkk..kMMk........',
   '..kMk..kkk..kMk.........',
@@ -82,14 +82,14 @@ const GARBAGE_HOUND = def([
 const DATA_MITE = def([
   '....k....k....',
   '....k....k....',
-  '...kCk..kCk...',
+  '...kPk..kPk...',
   '..kkkkkkkkkk..',
   '.kMMMMMMMMMMk.',
   'kMMPPPPPPPPMMk',
-  'kMPCCCCCCCCPMk',
-  'kMPCCkkkkCCPMk',
-  'kMPCCkPPkCCPMk',
-  'kMPCCCCCCCCPMk',
+  'kMPPPPPPPPPPMk',
+  'kMPPkkkkkkPMk',
+  'kMPPkPPkPkPMk',
+  'kMPPPPPPPPPPMk',
   'kMMPPPPPPPPMMk',
   '.kMMMMMMMMMMk.',
   '..kkPkkkkPkk..',
@@ -97,13 +97,13 @@ const DATA_MITE = def([
 ], {}, { oy: 14 });
 
 const GLITCH_GOBLIN = def([
-  '...C.......C...',
-  '...kCk...kCk...',
-  '...kCk...kCk...',
+  '...P.......P...',
+  '...kPk...kPk...',
+  '...kPk...kPk...',
   '..kkPPkkPPkk...',
   '.kMMMMMMMMMMk..',
   'kMMPMMMMMMPMMk.',
-  'kMMkCkMMMkCkMk.',
+  'kMMkPkMMMkPkMk.',
   'kMMMMMMMMMMMMk.',
   '.kMMMMMMMMMMk..',
   '..kMMMMMMMMk...',
@@ -129,15 +129,15 @@ const TOXIC_SLIME = def([
   'ksssGGssssGGsssk',
   'ksssssssssssssssk',
   'ksskkssssskkssssk',
-  'ksGkksssskkGsssk',
+  'ksXkksssskkXsssk',
   '.ksssssssssssk..',
   '..kkssssssskk...',
   '....kGkkkGk.....',
-], { s: '#3f5a1f' });
+], { s: '#3f5a1f', X: PAL.yellow });
 
 const SPARE_DRONE = def([
-  '...C......C...',
-  '..kCk....kCk..',
+  '...P......P...',
+  '..kPk....kPk..',
   '.kkkkkkkkkkkk.',
   'kMMMMMMMMMMMMk',
   'kMMkkkkkkkkMMk',
@@ -147,7 +147,7 @@ const SPARE_DRONE = def([
   'kMMkkkkkkkkMMk',
   '.kMMMMMMMMMMk.',
   '..kkMkkkkMkk..',
-  '....C....C....',
+  '....P....P....',
 ], {}, { oy: 12 });
 
 // ---------------------------------------------------------------------------
@@ -189,6 +189,25 @@ const WIRE_WRAITH = def([
   '....w....w....',
   '....w....w....',
 ], {}, { oy: 18 });
+
+/** Sheet uncommon — slender punk with violet mask and dagger. */
+const NEON_LURKER = def([
+  '....VV.VV....',
+  '...kVVkVVk...',
+  '..kMMMMMMMk..',
+  '.kMMkVVkMMk.',
+  '.kMMkVVkMMk.',
+  '.kMMMMMMMMk.',
+  '..kMMMMMMk..',
+  '.kMMPPPPMMMk.',
+  'kMMMPPMPPMMMk',
+  'kMMkMMMMMMkMk',
+  '.kMkMMMMMkMk.',
+  '.kMk.kkk.kMk.',
+  '.kMk.....kMk.',
+  '.kLk.....kLk.',
+  '.kkk.....kkk.',
+]);
 
 const BATTERBOT = def([
   '....k....k....',
@@ -293,6 +312,7 @@ const DEFS: Record<string, { def: SpriteDef; w: number; h: number }> = {
   spareDrone: { def: SPARE_DRONE, w: 12, h: 10 },
   rustCrawler: { def: RUST_CRAWLER, w: 16, h: 11 },
   wireWraith: { def: WIRE_WRAITH, w: 12, h: 17 },
+  neonLurker: { def: NEON_LURKER, w: 12, h: 16 },
   batterbot: { def: BATTERBOT, w: 12, h: 15 },
   junkButcher: { def: JUNK_BUTCHER, w: 16, h: 23 },
   scrapTitan: { def: SCRAP_TITAN, w: 28, h: 27 },

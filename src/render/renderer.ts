@@ -165,9 +165,14 @@ export class Renderer {
   }
 
   private resize(): void {
-    const availW = window.visualViewport?.width ?? window.innerWidth;
-    const availH = window.visualViewport?.height ?? window.innerHeight;
-    this.portrait = availH > availW;
+    // Prefer the stage's content box so CSS safe-area padding is already
+    // subtracted. Falling back to the viewport keeps boot/tests working if the
+    // canvas is somehow unmounted.
+    const stage = this.canvas.parentElement;
+    const availW = stage?.clientWidth || window.visualViewport?.width || window.innerWidth;
+    const availH = stage?.clientHeight || window.visualViewport?.height || window.innerHeight;
+    this.portrait = (window.visualViewport?.height ?? window.innerHeight)
+      > (window.visualViewport?.width ?? window.innerWidth);
 
     let scale = Math.min(availW / VIEW_W, availH / VIEW_H);
     // Integer scaling keeps pixels square, but only when there is room for it.

@@ -27,7 +27,7 @@ The expensive part is art, not code.
 
 ### Enemy roster
 
-11 of the ~24 enemies in the bible are built. Missing: Neon Lurker, Shiv
+12 of the ~24 enemies in the bible are built. Missing: Shiv
 Splicer, Leaking Barrel, Hacker Shade, Night Reaper, Void Fiend, Circuit
 Breaker, Spike Monger, Drone Commander, Overclocked Sentinel, Plague Technician.
 

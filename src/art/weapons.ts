@@ -52,7 +52,7 @@ function wdef(rows: string[], ox: number, oy: number, extra: Record<string, stri
 
 const PIPE = wdef([
   '..kkkkkkkkkkkkkkkkkkk',
-  '.ktttkLLLLLLLLLLLLLLk',
+  '.ktttkLLLLLPLLLLLLLLk',
   'kMtttMMMMMMMMMMMMrrMk',
   'kMtttMMMMMMMMMMMMrrMk',
   '.ktttkMMMMMMMMMMMMMMk',
@@ -61,17 +61,17 @@ const PIPE = wdef([
 
 const CLEAVER = wdef([
   '.....kkkkkkkkkkkkkk.',
-  '....kLLLLLLLLLLLLLLk',
-  '...kHLLLLLLLLLLLLLLk',
+  '....kLLLLPLLLLLLLLLk',
+  '...kHLLLLPkLLLLLLLLk',
   'kkkkMMMMMMMMMMMMMMMk',
-  'kttkMMMMMMMMMMMMMMMk',
+  'kttkMMMMMMPkMMMMMMMk',
   'kkkkkMMMMMMMMMMMMMMk',
   '.....kkkkkkkkkkkkkk.',
 ], 2, 4);
 
 const SCRAP_SWORD = wdef([
   '.......kkkkkkkkkkkkkkkk',
-  '......kHHHHHHHHHHHHHHHk',
+  '......kHHHHVHHHHHHHHHHk',
   'kkkkkkMLLLLLLLLLLLLLLk.',
   'kttkkkMMMMMMMMMMMMMMk..',
   'kkkkkkMLLLLLLLLLLLLk...',
@@ -81,8 +81,8 @@ const SCRAP_SWORD = wdef([
 
 const CROWBAR = wdef([
   '................kkkk.',
-  '...............kMMLLk',
-  'kkkkkkkkkkkkkkkMMMLk.',
+  '...............kMMCCk',
+  'kkkkkkkkkkkkkkkMMMCk.',
   'kttttMMMMMMMMMMMMkk..',
   'kkkkkkkkkkkkkkkMMMk..',
   '..............kMMk...',
@@ -91,10 +91,10 @@ const CROWBAR = wdef([
 
 const CHAINSAW = wdef([
   '.....kkkkkkkkkkkkkkkkk',
-  '....kMHkHkHkHkHkHkHkMk',
+  '....kMHkHkPkHkHkHkHkMk',
   '.kkkMMMMMMMMMMMMMMMMMk',
   'kttMMMMMMMMMMMMMMMMMMk',
-  'kttMMMMMMMMMMMMMMMMMMk',
+  'kttMMMMMMMPMMMMMMMMMMk',
   '.kkkMMMMMMMMMMMMMMMMMk',
   '....kMHkHkHkHkHkHkHkMk',
   '.....kkkkkkkkkkkkkkkkk',
@@ -116,7 +116,7 @@ const DRILL = wdef([
 
 const PISTOL = wdef([
   '....kkkkkkkkkk.',
-  '...kMMMMMMMMMMk',
+  '...kMMMMMCMMMMk',
   '..kMMMMMMMMMMMk',
   'kkMMMMMMkkkkkk.',
   'kttMMMMk.......',
@@ -128,7 +128,7 @@ const PISTOL = wdef([
 const NAILGUN = wdef([
   '......kkkkk........',
   '.....kMMMMMkkkkkkk.',
-  '....kMMMMMMMMMMMMMk',
+  '....kMMMMMGMMMMMMMk',
   'kkkkMMMMMMMMMMMMMMk',
   'kttMMMMMMMMkkkkkkk.',
   'kttMMMMMMMk........',
@@ -138,7 +138,7 @@ const NAILGUN = wdef([
 
 const SHOTGUN = wdef([
   '.....kkkkkkkkkkkkkkkk',
-  '....kMMMMMMMMMMMMMMMk',
+  '....kMMMMMOOOOOMMMMMk',
   '...kMMMMMMMMMMMMMMMMk',
   'kkkMMMMMMMkkkkkkkkkk.',
   'kttMMMMMMMk..........',
@@ -149,9 +149,9 @@ const SHOTGUN = wdef([
 
 const JUNK_CANNON = wdef([
   '.......kkkkkkkkkkkkkkk',
-  '.....kkMMMMMMMMMMMMMMk',
+  '.....kkMMMMMYMMMMMMMMk',
   '....kMMMMMMMMMMMMMMMMk',
-  '..kkMMMMMMMMMMMMMMMMMk',
+  '..kkMMMMMMMGMMMMMMMMMk',
   'kkkMMMMMMMMMMMMMMMMMMk',
   'kttMMMMMMMMMMMMMMMMMMk',
   'kttMMMMMkkkkkkkkkkkkk.',
@@ -313,10 +313,10 @@ const P_SAW = wdef([
 ], 3, 3);
 const P_GRENADE = wdef([
   '..kk..',
-  '.kGGk.',
-  'kGGGGk',
-  'kGkkGk',
-  '.kGGk.',
+  '.kPPk.',
+  'kPwPPk',
+  'kPkkPk',
+  '.kPPk.',
   '..kk..',
 ], 3, 3);
 const P_ROCKET = wdef([
@@ -326,6 +326,14 @@ const P_ROCKET = wdef([
   'kOOkMMMMMMk',
   '.....kkkk..',
 ], 5, 2);
+const P_TOXIC_CAN = wdef([
+  '.kkkk.',
+  'kGGGGk',
+  'kGkkGk',
+  'kGkkGk',
+  'kGGGGk',
+  '.kkkk.',
+], 3, 3);
 
 // ---------------------------------------------------------------------------
 
@@ -363,6 +371,7 @@ const registry: Record<string, SpriteDef> = {
   projSaw: P_SAW,
   projGrenade: P_GRENADE,
   projRocket: P_ROCKET,
+  projToxicCan: P_TOXIC_CAN,
 };
 
 const cache = new Map<string, Sprite>();

@@ -727,6 +727,20 @@ export class Player extends Actor {
 
     if (!drawWeaponBehind) this.drawHeldWeapon(r, blink);
 
+    // Companion drone from the character sheet — orbits the shoulder so the
+    // static sprite still feels alive without needing a second animation set.
+    if (this.character.drone) {
+      const orbit = time.elapsed * 2.1 + this.phase;
+      const dx = Math.cos(orbit) * 11 * this.facing;
+      const dy = Math.sin(orbit * 1.4) * 3 - this.h * 0.72;
+      r.drawSprite(this.character.drone, this.x + dx, this.y + bob + dy, {
+        alpha: blink * 0.95,
+        glow: 1.15,
+        sx: 1 + Math.sin(orbit * 2) * 0.04,
+        sy: 1 - Math.sin(orbit * 2) * 0.04,
+      });
+    }
+
     // Element aura when carrying something genuinely dangerous.
     if (this.weapon.instability > 0.05) {
       fx.drawAura(r, this.x, this.y, this.weapon.style.glow, time.elapsed, 11, 0.7);

@@ -102,6 +102,11 @@ export const ENEMIES: EnemyDef[] = [
     partChance: 0.12,
   },
   {
+    id: 'neonLurker', name: 'NEON LURKER', art: 'neonLurker', tier: 'uncommon', behavior: 'hopper',
+    hp: 38, touch: 11, speed: 88, sight: 210, scrap: 10, element: 'void', gravity: 900,
+    partChance: 0.11,
+  },
+  {
     id: 'batterbot', name: 'BATTERBOT', art: 'batterbot', tier: 'uncommon', behavior: 'charger',
     hp: 46, touch: 12, speed: 66, sight: 200, scrap: 11, element: 'shock', gravity: 900,
     attack: { damage: 12, cooldown: 2.2, range: 110, telegraph: 0.55 },

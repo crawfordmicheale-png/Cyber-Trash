@@ -290,7 +290,7 @@ await mshot('15-mobile-run');
 
 // Holding the RIGHT pad must actually move the player.
 const beforeX = await mprobe(() => window.cyberTrash.playerX);
-await holdBuffer(89, 227, 700);
+await holdBuffer(90, 230, 700);
 await mp.waitForTimeout(120);
 const afterX = await mprobe(() => window.cyberTrash.playerX);
 const heldDistance = afterX - beforeX;
@@ -331,8 +331,8 @@ const slideBuffer = async (fromB, toB) => {
   await cdp.detach();
 };
 
-const LEFT_PAD = [34, 231];
-const RIGHT_PAD = [90, 231];
+const LEFT_PAD = [34, 230];
+const RIGHT_PAD = [90, 230];
 await slideBuffer(LEFT_PAD, RIGHT_PAD);
 await mp.waitForTimeout(500);
 
@@ -353,7 +353,7 @@ if (postRight - preRight < 20) {
 // handed that whole strip to LEFT, so the inner edge of RIGHT moved you left.
 // x=66 is visually inside RIGHT and inside LEFT's padding.
 const preSeam = await mprobe(() => window.cyberTrash.playerX);
-await holdBuffer(66, 231, 600);
+await holdBuffer(66, 230, 600);
 await mp.waitForTimeout(150);
 const postSeam = await mprobe(() => window.cyberTrash.playerX);
 if (postSeam - preSeam < 15) {
