@@ -424,9 +424,17 @@ class Game {
     const roster = characters();
     const hero = roster[0];
     const bob = Math.sin(time.elapsed * 2.2) * 0.012;
-    r.drawSprite(hero.sprite, VIEW_W / 2, VIEW_H - 46, {
+    const hx = VIEW_W / 2;
+    const hy = VIEW_H - 46;
+    r.drawSprite(hero.sprite, hx, hy, {
       sx: 2 - bob, sy: 2 + bob, glow: 1,
     });
+    if (hero.drone) {
+      const orbit = time.elapsed * 2.1;
+      r.drawSprite(hero.drone, hx + Math.cos(orbit) * 22, hy - 44 + Math.sin(orbit * 1.4) * 6, {
+        sx: 2, sy: 2, glow: 1.2,
+      });
+    }
 
     drawGraffiti(g, 'CYBER-TRASH', VIEW_W / 2, 40, PAL.magenta, 4);
     drawText(g, 'CLIMB. KILL. SCAVENGE. BUILD. ESCAPE.', VIEW_W / 2, 78, {
@@ -437,7 +445,7 @@ class Game {
     });
 
     if (Math.sin(time.elapsed * 3.4) > -0.3) {
-      drawText(g, '[ ENTER ]', VIEW_W / 2, VIEW_H - 22, {
+      drawText(g, touch.enabled ? '[ TAP ]' : '[ ENTER ]', VIEW_W / 2, VIEW_H - 22, {
         color: PAL.lime, glow: PAL.lime, align: 'center',
       });
     }
