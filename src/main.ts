@@ -649,10 +649,11 @@ function boot(): void {
       /* no audio; carry on */
     }
     // Same gesture can claim fullscreen on mobile. iOS ignores this; Android
-    // Chrome and most PWA installs take it and hide browser chrome.
+    // Chrome and most PWA installs take it and hide browser chrome. Skip under
+    // automation — Playwright can't resize a maximized/fullscreen window.
     try {
       const coarse = window.matchMedia?.('(pointer: coarse)').matches;
-      if (coarse && document.documentElement.requestFullscreen) {
+      if (coarse && !navigator.webdriver && document.documentElement.requestFullscreen) {
         void document.documentElement.requestFullscreen().catch(() => {});
       }
     } catch {
